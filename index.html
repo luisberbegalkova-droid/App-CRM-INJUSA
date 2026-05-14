@@ -12,7 +12,6 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         .nav-active { background-color: #000; color: #fff; }
-        .chart-box-large { position: relative; height: 350px; width: 100%; }
         .chart-box-md { position: relative; height: 300px; width: 100%; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; }
@@ -86,7 +85,7 @@
                 </div>
             </div>
 
-            <!-- VIEW: RESUMEN CLIENTES (Tabla restaurada al 100%) -->
+            <!-- VIEW: RESUMEN CLIENTES -->
             <div id="view-clientes" class="hidden bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex-col h-full flex-1">
                 <div class="overflow-auto flex-1">
                     <table class="w-full text-left border-collapse">
@@ -119,10 +118,8 @@
         const API_URL = 'https://script.google.com/macros/s/AKfycbxCXZbP6BpR_GcRlEaScTgUJdhqqmEegZIQNeFcFp4QXjP-tQfX6gT0rRqzo7H9_xto/exec';
         let chartInstances = {};
         
-        // Activar el plugin de etiquetas
         Chart.register(ChartDataLabels);
 
-        // Control de Pestañas
         function switchTab(tab) {
             const isDash = tab === 'dashboard';
             document.getElementById('view-dashboard').classList.toggle('hidden', !isDash);
@@ -136,7 +133,6 @@
 
         const formatEur = (num) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(num);
 
-        // Generador de colores semáforo para el gráfico de éxito
         function getSuccessColor(value) {
             const hue = ((value / 100) * 120).toString(10);
             return `hsl(${hue}, 70%, 45%)`;
@@ -183,37 +179,31 @@
                 exitoMedio: groupedAreas[areaName].sumExito / groupedAreas[areaName].count
             }));
 
-            // Ordenado por Importe
             const areasByPres = [...areasArray].sort((a, b) => b.presupuesto - a.presupuesto);
-            // Ordenado por Éxito
             const areasBySuccess = [...areasArray].sort((a, b) => b.exitoMedio - a.exitoMedio);
 
-            // KPIs
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPres.length > 0 ? areasByPres[0].name : '-';
             const avgGlobal = data.reduce((a, b) => a + (b.cumplimiento || 0), 0) / (data.length || 1);
             document.getElementById('kpi-avg').innerText = avgGlobal.toFixed(1) + '%';
 
-            // GRÁFICA: RANKING IMPORTES
             drawChart('chart-bar-areas', 'bar', {
                 labels: areasByPres.map(a => a.name),
                 datasets: [{ label: 'Importe Total (€)', data: areasByPres.map(a => a.presupuesto), backgroundColor: '#000000', borderRadius: 6 }]
             }, false);
 
-            // GRÁFICA: QUESO TOP 15
+            drawChart('chart-bar-exito', 'bar', {
+                labels: areasBySuccess.map(a => a.name),
+                datasets: [{ label: '% Éxito', data: areasBySuccess.map(a => a.exitoMedio), backgroundColor: areasBySuccess.map(a => getSuccessColor(a.exitoMedio)), borderRadius: 6 }]
+            }, false);
+            
             const top15 = [...data].sort((a, b) => (Number(b.presupuesto) || 0) - (Number(a.presupuesto) || 0)).slice(0, 15);
-            const pieColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#E7E9ED', '#8A2BE2', '#00FF7F', '#DC143C', '#00CED1', '#FFD700', '#FF1493', '#1E90FF', '#32CD32'];
+            const pieColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#45EDC0', '#F7464A', '#46BFBD', '#FDB45C', '#949FB1', '#4D5360', '#AC64AD', '#5175AE', '#E2EAE9'];
             
             drawChart('chart-pie-clientes', 'doughnut', {
                 labels: top15.map(c => c.cliente),
                 datasets: [{ data: top15.map(c => c.presupuesto), backgroundColor: pieColors, borderWidth: 2, borderColor: '#fff' }]
             }, true);
-
-            // GRÁFICA: ÉXITO COMERCIAL (Semáforo)
-            drawChart('chart-bar-exito', 'bar', {
-                labels: areasBySuccess.map(a => a.name),
-                datasets: [{ label: '% Éxito', data: areasBySuccess.map(a => a.exitoMedio), backgroundColor: areasBySuccess.map(a => getSuccessColor(a.exitoMedio)), borderRadius: 6 }]
-            }, false);
         }
 
         function drawChart(id, type, data, isPie) {
@@ -225,46 +215,50 @@
                 maintainAspectRatio: false,
                 plugins: { 
                     legend: { display: false },
-                    datalabels: { display: false } // Por defecto apagado
+                    datalabels: { display: false }
                 },
                 scales: type === 'bar' ? { y: { beginAtZero: true }, x: { grid: { display: false } } } : {}
             };
 
-            // Configuración específica para el Queso (Doughnut)
             if(isPie) {
                 options.cutout = '55%';
                 options.plugins.datalabels = {
                     display: true,
-                    color: '#4B5563', // Gris oscuro para leerse bien
+                    color: '#4B5563',
                     anchor: 'end',
                     align: 'end',
                     offset: 5,
                     font: { size: 9, weight: 'bold' },
                     formatter: (value, ctx) => {
                         let label = ctx.chart.data.labels[ctx.dataIndex];
-                        return label.length > 15 ? label.substring(0,15) + '...' : label; // Trunca nombres muy largos
+                        return label.length > 15 ? label.substring(0,15) + '...' : label;
                     }
                 };
-                options.layout = { padding: 40 }; // Da espacio para que las etiquetas no se corten
+                options.layout = { padding: 40 };
             }
 
             chartInstances[id] = new Chart(ctx, { type: type, data: data, options: options });
         }
 
-        // TABLA RESTAURADA EXACTA A LA ORIGINAL
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
-            tbody.innerHTML = data.map(item => {
+            
+            // ORDENAR DATOS: Mayor a menor presupuesto
+            const sortedData = [...data].sort((a, b) => {
+                const presA = Number(a.presupuesto) || 0;
+                const presB = Number(b.presupuesto) || 0;
+                return presB - presA; // Orden descendente
+            });
+
+            tbody.innerHTML = sortedData.map(item => {
                 let p = Number(item.presupuesto) || 0;
                 let c = Number(item.cumplimiento) || 0;
                 
-                // Colores Barra de progreso
                 let barColor = 'bg-blue-600';
                 if (c < 50) barColor = 'bg-red-500';
                 else if (c >= 100) barColor = 'bg-green-500';
                 else if (c >= 50 && c < 80) barColor = 'bg-gray-700';
 
-                // Colores Etiqueta Estado
                 const estado = String(item.estado || 'Pendiente');
                 let badgeClass = 'bg-gray-100 text-gray-700';
                 if(estado.toLowerCase().includes('positivo') || estado.toLowerCase().includes('ganado') || estado.toLowerCase().includes('superado')) badgeClass = 'bg-green-100 text-green-800';
