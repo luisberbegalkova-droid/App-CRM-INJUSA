@@ -3,80 +3,78 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>INJUSA CRM - Final</title>
+    <title>INJUSA CRM - Analytics Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Plugin para etiquetas dentro del gráfico -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
         body { font-family: 'Inter', sans-serif; }
         .nav-active { background: #000; color: #fff; }
-        .chart-box { height: 300px; position: relative; }
+        .card { background: white; border-radius: 1.5rem; border: 1px solid #e5e7eb; padding: 1.5rem; height: 100%; }
+        .chart-box-large { height: 450px; position: relative; }
+        .chart-box-md { height: 320px; position: relative; }
     </style>
 </head>
-<body class="bg-[#f3f4f6] flex h-screen overflow-hidden">
+<body class="bg-[#f8fafc] flex h-screen overflow-hidden">
 
     <!-- Sidebar -->
-    <aside class="w-64 bg-white border-r flex flex-col p-6 shrink-0">
-        <div class="flex items-center gap-3 mb-8">
-            <div class="w-10 h-10 bg-black text-white rounded-lg flex items-center justify-center font-black">I</div>
-            <h1 class="font-black text-xl tracking-tighter">CRM INJUSA</h1>
+    <aside class="w-64 bg-white border-r flex flex-col p-6 gap-6 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-black text-white rounded-xl flex items-center justify-center font-black">I</div>
+            <h1 class="font-black text-xl tracking-tight">CRM INJUSA</h1>
         </div>
-        <nav class="flex-1 space-y-2">
+        <nav class="space-y-2">
             <button onclick="switchTab('dash')" id="tab-dash" class="nav-active w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition-all"><span class="material-symbols-outlined">dashboard</span> Dashboard</button>
             <button onclick="switchTab('list')" id="tab-list" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-gray-400 hover:bg-gray-50 transition-all"><span class="material-symbols-outlined">table_chart</span> Resumen Clientes</button>
         </nav>
     </aside>
 
-    <!-- Content -->
-    <main class="flex-1 flex flex-col overflow-y-auto">
-        <header class="p-8 flex justify-between items-center bg-white border-b sticky top-0 z-10">
-            <h2 id="title" class="text-2xl font-black">Dashboard Visual</h2>
-            <button onclick="fetchCRMData()" class="bg-black text-white px-6 py-2 rounded-lg font-bold shadow-lg hover:bg-gray-800 transition-all">ACTUALIZAR</button>
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col p-8 gap-6 overflow-y-auto">
+        <header class="flex justify-between items-center shrink-0">
+            <h2 id="title" class="text-3xl font-black tracking-tight">Dashboard Visual</h2>
+            <button onclick="fetchCRMData()" class="bg-black text-white px-6 py-2 rounded-full font-bold shadow-lg hover:scale-105 transition-transform">ACTUALIZAR DATOS</button>
         </header>
 
-        <div class="p-8 space-y-8">
-            <!-- KPIs -->
-            <div id="kpi-row" class="grid grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-2xl border shadow-sm text-center">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Presupuesto Global</p>
-                    <h3 id="kpi-total" class="text-3xl font-black mt-2">0 €</h3>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border-l-4 border-l-blue-600 shadow-sm text-center">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Área Top (Importe)</p>
-                    <h3 id="kpi-top-area" class="text-2xl font-black mt-2">-</h3>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border shadow-sm text-center">
-                    <p class="text-xs font-bold text-gray-400 uppercase">Éxito Medio Global</p>
-                    <h3 id="kpi-avg" class="text-3xl font-black mt-2">0%</h3>
-                </div>
-            </div>
+        <!-- KPI Row -->
+        <div id="view-dash-kpis" class="grid grid-cols-3 gap-6 shrink-0">
+            <div class="card text-center"><p class="text-xs font-bold text-gray-400 uppercase">Presupuesto Global</p><h3 id="kpi-total" class="text-3xl font-black mt-1">0 €</h3></div>
+            <div class="card text-center border-l-4 border-l-green-500"><p class="text-xs font-bold text-gray-400 uppercase">Área Top (Ventas)</p><h3 id="kpi-area" class="text-2xl font-black mt-1">-</h3></div>
+            <div class="card text-center"><p class="text-xs font-bold text-gray-400 uppercase">Promedio Éxito Total</p><h3 id="kpi-exito" class="text-3xl font-black text-blue-600 mt-1">0%</h3></div>
+        </div>
 
-            <!-- DASHBOARD VIEW -->
-            <div id="view-dash" class="grid grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-2xl border shadow-sm">
-                    <h4 class="font-bold mb-4 text-gray-500 uppercase text-xs">Ranking Áreas por Importe (€)</h4>
-                    <div class="chart-box"><canvas id="chart-areas"></canvas></div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border shadow-sm">
-                    <h4 class="font-bold mb-4 text-gray-500 uppercase text-xs">Reparto Top 15 Clientes</h4>
-                    <div class="chart-box"><canvas id="chart-pie"></canvas></div>
-                </div>
-                <div class="bg-white p-6 rounded-2xl border shadow-sm col-span-2">
-                    <h4 class="font-bold mb-4 text-gray-500 uppercase text-xs">% Éxito por Área Comercial</h4>
-                    <div class="chart-box"><canvas id="chart-exito"></canvas></div>
-                </div>
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dash" class="grid grid-cols-12 gap-6 pb-8">
+            <!-- Ranking Áreas -->
+            <div class="card col-span-12 lg:col-span-6 flex flex-col">
+                <h4 class="text-sm font-bold text-gray-400 uppercase mb-4">Ranking Áreas por Importe (€)</h4>
+                <div class="chart-box-md"><canvas id="chart-bar-areas"></canvas></div>
             </div>
+            <!-- El Queso (Doughnut) -->
+            <div class="card col-span-12 lg:col-span-6 flex flex-col">
+                <h4 class="text-sm font-bold text-gray-400 uppercase mb-4">Reparto Top 15 Clientes</h4>
+                <div class="chart-box-md"><canvas id="chart-pie-clientes"></canvas></div>
+            </div>
+            <!-- Éxito Comercial Ordenado -->
+            <div class="card col-span-12 flex flex-col">
+                <h4 class="text-sm font-bold text-gray-400 uppercase mb-4">Éxito por Área Comercial (Ordenado + Semáforo)</h4>
+                <div class="chart-box-md"><canvas id="chart-bar-exito"></canvas></div>
+            </div>
+        </div>
 
-            <!-- CLIENT LIST VIEW -->
-            <div id="view-list" class="hidden bg-white border rounded-2xl shadow-sm overflow-hidden">
+        <!-- LIST VIEW -->
+        <div id="view-list" class="hidden bg-white rounded-3xl border shadow-sm overflow-hidden flex-col h-full">
+            <div class="overflow-auto">
                 <table class="w-full text-left border-collapse">
-                    <thead class="bg-gray-50">
+                    <thead class="bg-gray-50 sticky top-0">
                         <tr>
-                            <th class="p-4 text-xs font-bold uppercase text-gray-400">Cliente</th>
-                            <th class="p-4 text-xs font-bold uppercase text-gray-400">Área</th>
-                            <th class="p-4 text-xs font-bold uppercase text-gray-400 text-right">Presupuesto</th>
-                            <th class="p-4 text-xs font-bold uppercase text-gray-400">Éxito Objetivo</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase">Cliente</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase">Área</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase text-right">Presupuesto</th>
+                            <th class="p-4 text-xs font-bold text-gray-400 uppercase">Éxito Objetivo</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y"></tbody>
@@ -88,74 +86,128 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbxCXZbP6BpR_GcRlEaScTgUJdhqqmEegZIQNeFcFp4QXjP-tQfX6gT0rRqzo7H9_xto/exec';
         let charts = {};
+        Chart.register(ChartDataLabels); // Registrar plugin de etiquetas
 
         function switchTab(t) {
-            const isDash = t === 'dash';
-            document.getElementById('view-dash').classList.toggle('hidden', !isDash);
-            document.getElementById('kpi-row').classList.toggle('hidden', !isDash);
-            document.getElementById('view-list').classList.toggle('hidden', isDash);
-            document.getElementById('tab-dash').className = isDash ? 'nav-active w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold' : 'w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-gray-400 hover:bg-gray-50';
-            document.getElementById('tab-list').className = !isDash ? 'nav-active w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold' : 'w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-gray-400 hover:bg-gray-50';
-            document.getElementById('title').innerText = isDash ? 'Dashboard Visual' : 'Desglose por Clientes';
+            document.getElementById('view-dash').classList.toggle('hidden', t === 'list');
+            document.getElementById('view-dash-kpis').classList.toggle('hidden', t === 'list');
+            document.getElementById('view-list').classList.toggle('hidden', t === 'dash');
+            document.getElementById('tab-dash').className = t === 'dash' ? 'nav-active w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold' : 'w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-gray-400 hover:bg-gray-50';
+            document.getElementById('tab-list').className = t === 'list' ? 'nav-active w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold' : 'w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-gray-400 hover:bg-gray-50';
+            document.getElementById('title').innerText = t === 'dash' ? 'Dashboard Visual' : 'Resumen por Clientes';
         }
 
         async function fetchCRMData() {
             try {
                 const r = await fetch(API_URL);
                 const data = await r.json();
-                render(data);
+                renderAll(data.filter(i => i.cliente));
             } catch (e) { console.error(e); }
         }
 
-        function render(data) {
+        // Función para generar colores tipo semáforo
+        function getSuccessColor(value) {
+            const hue = ((value / 100) * 120).toString(10);
+            return `hsl(${hue}, 70%, 45%)`;
+        }
+
+        function renderAll(data) {
             const groups = {};
-            let globalPres = 0, globalExito = 0;
+            let globalPres = 0;
 
             data.forEach(i => {
                 const a = i.area || 'Sin Área';
                 if(!groups[a]) groups[a] = { pres: 0, exito: 0, n: 0 };
-                groups[a].pres += i.presupuesto;
-                groups[a].exito += i.cumplimiento;
+                groups[a].pres += (i.presupuesto || 0);
+                groups[a].exito += (i.cumplimiento || 0);
                 groups[a].n++;
-                globalPres += i.presupuesto;
-                globalExito += i.cumplimiento;
+                globalPres += (i.presupuesto || 0);
             });
 
-            const areas = Object.entries(groups).map(([name, v]) => ({ name, pres: v.pres, exito: v.exito / v.n })).sort((a,b) => b.pres - a.pres);
-
-            // ACTUALIZACIÓN DE KPIs
-            document.getElementById('kpi-total').innerText = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(globalPres);
-            document.getElementById('kpi-top-area').innerText = areas[0]?.name || '-';
-            document.getElementById('kpi-avg').innerText = (globalExito / data.length).toFixed(1) + '%';
-
-            // GRÁFICAS
-            initChart('chart-areas', 'bar', areas.map(a => a.name), areas.map(a => a.pres), 'Importe €', '#000');
-            initChart('chart-exito', 'bar', areas.map(a => a.name), areas.map(a => a.exito), '% Éxito', '#2563eb');
+            // Preparar áreas ordenadas por importe
+            const areasByPres = Object.entries(groups).map(([name, v]) => ({ name, pres: v.pres, exito: v.exito / v.n })).sort((a,b) => b.pres - a.pres);
             
-            const top = [...data].sort((a,b) => b.presupuesto - a.presupuesto).slice(0, 15);
-            initChart('chart-pie', 'doughnut', top.map(t => t.cliente), top.map(t => t.presupuesto), 'Importe', ['#000', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd']);
+            // Preparar áreas ordenadas por éxito (NUEVO)
+            const areasBySuccess = [...areasByPres].sort((a,b) => b.exito - a.exito);
 
-            // TABLA CLIENTES
+            // KPIs
+            document.getElementById('kpi-total').innerText = new Intl.NumberFormat('es-ES',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(globalPres);
+            document.getElementById('kpi-area').innerText = areasByPres[0]?.name || '-';
+            const avgGlobal = data.reduce((a, b) => a + (b.cumplimiento || 0), 0) / data.length;
+            document.getElementById('kpi-exito').innerText = avgGlobal.toFixed(1) + '%';
+
+            // Gráfico Áreas Importe
+            initChart('chart-bar-areas', 'bar', areasByPres.map(a => a.name), areasByPres.map(a => a.pres), 'Importe €', '#000', false);
+
+            // Gráfico Áreas Éxito (ORDENADO + GRADIENTE)
+            initChart('chart-bar-exito', 'bar', areasBySuccess.map(a => a.name), areasBySuccess.map(a => a.exito), '% Éxito Medio', areasBySuccess.map(a => getSuccessColor(a.exito)), false);
+            
+            // Gráfico Queso Clientes (TOP 15 + COLORIDO + LABELS)
+            const top = [...data].sort((a,b) => b.presupuesto - a.presupuesto).slice(0, 15);
+            const palette = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#45EDC0', '#F7464A', '#46BFBD', '#FDB45C', '#949FB1', '#4D5360', '#AC64AD', '#5175AE', '#E2EAE9'];
+            
+            initChart('chart-pie-clientes', 'doughnut', top.map(t => t.cliente), top.map(t => t.presupuesto), 'Importe', palette, true);
+
+            // Tabla
             document.getElementById('table-body').innerHTML = data.map(i => `
                 <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="p-4 text-sm font-bold">${i.cliente}</td>
+                    <td class="p-4 text-sm font-bold text-gray-900">${i.cliente}</td>
                     <td class="p-4 text-xs text-gray-500">${i.area}</td>
                     <td class="p-4 text-sm font-bold text-right">${new Intl.NumberFormat('es-ES').format(i.presupuesto)} €</td>
                     <td class="p-4">
                         <div class="flex items-center gap-3">
                             <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-full bg-blue-600" style="width:${i.cumplimiento}%"></div></div>
-                            <span class="text-xs font-black w-10 text-right">${i.cumplimiento.toFixed(0)}%</span>
+                            <span class="text-xs font-black w-10 text-right">${(i.cumplimiento || 0).toFixed(0)}%</span>
                         </div>
                     </td>
                 </tr>
             `).join('');
         }
 
-        function initChart(id, type, labels, d, label, colors) {
+        function initChart(id, type, labels, d, label, colors, showLabelsInside) {
             if (charts[id]) charts[id].destroy();
             charts[id] = new Chart(document.getElementById(id), {
-                type, data: { labels, datasets: [{ label, data: d, backgroundColor: colors, borderRadius: 5 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: type === 'doughnut' } } }
+                type, 
+                data: { 
+                    labels, 
+                    datasets: [{ 
+                        label, 
+                        data: d, 
+                        backgroundColor: colors, 
+                        borderRadius: type === 'bar' ? 8 : 0,
+                        borderWidth: type === 'doughnut' ? 2 : 0,
+                        borderColor: '#fff'
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            display: type === 'doughnut', 
+                            position: 'right',
+                            labels: { boxWidth: 10, font: { size: 9, weight: 'bold' } } 
+                        },
+                        datalabels: {
+                            display: showLabelsInside,
+                            color: '#fff',
+                            font: { weight: 'bold', size: 9 },
+                            formatter: (value, ctx) => {
+                                let label = ctx.chart.data.labels[ctx.dataIndex];
+                                return label.length > 10 ? label.substring(0,10) + '...' : label;
+                            },
+                            anchor: 'end',
+                            align: 'start',
+                            offset: 10,
+                            textShadowColor: 'rgba(0,0,0,0.5)',
+                            textShadowBlur: 4
+                        }
+                    }, 
+                    scales: type === 'bar' ? { 
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                        x: { grid: { display: false } }
+                    } : {} 
+                }
             });
         }
         window.onload = fetchCRMData;
