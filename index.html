@@ -1,339 +1,247 @@
-<!-- Dashboard Comercial Dinámico - INJUSA CRM -->
 <!DOCTYPE html>
 <html class="light" lang="es">
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Dashboard - CRM INJUSA</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <title>INJUSA CRM - Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <script id="tailwind-config">
-        tailwind.config = {
-          darkMode: "class",
-          theme: {
-            extend: {
-              "colors": {
-                      "on-surface-variant": "#45464d",
-                      "on-primary-container": "#7c839b",
-                      "surface-dim": "#d8dadc",
-                      "background": "#f7f9fb",
-                      "secondary-fixed": "#d3e4fe",
-                      "surface-container-lowest": "#ffffff",
-                      "outline-variant": "#c6c6cd",
-                      "inverse-surface": "#2d3133",
-                      "on-secondary": "#ffffff",
-                      "on-secondary-fixed": "#0b1c30",
-                      "on-tertiary": "#ffffff",
-                      "on-primary-fixed": "#131b2e",
-                      "on-tertiary-container": "#98805d",
-                      "on-tertiary-fixed": "#271901",
-                      "secondary": "#505f76",
-                      "surface-container-highest": "#e0e3e5",
-                      "on-background": "#191c1e",
-                      "primary-fixed": "#dae2fd",
-                      "surface-container-low": "#f2f4f6",
-                      "tertiary": "#000000",
-                      "surface-variant": "#e0e3e5",
-                      "surface-bright": "#f7f9fb",
-                      "primary-fixed-dim": "#bec6e0",
-                      "surface": "#f7f9fb",
-                      "primary-container": "#131b2e",
-                      "surface-container-high": "#e6e8ea",
-                      "primary": "#000000",
-                      "on-surface": "#191c1e",
-                      "on-secondary-container": "#54647a",
-                      "inverse-on-surface": "#eff1f3",
-                      "error": "#ba1a1a",
-                      "on-tertiary-fixed-variant": "#574425",
-                      "on-primary-fixed-variant": "#3f465c",
-                      "tertiary-fixed-dim": "#dec29a",
-                      "on-error-container": "#93000a",
-                      "tertiary-fixed": "#fcdeb5",
-                      "secondary-container": "#d0e1fb",
-                      "outline": "#76777d",
-                      "error-container": "#ffdad6",
-                      "inverse-primary": "#bec6e0",
-                      "surface-tint": "#565e74",
-                      "on-secondary-fixed-variant": "#38485d",
-                      "on-error": "#ffffff",
-                      "tertiary-container": "#271901",
-                      "surface-container": "#eceef0",
-                      "secondary-fixed-dim": "#b7c8e1",
-                      "on-primary": "#ffffff"
-              },
-              "borderRadius": {
-                      "DEFAULT": "0.125rem",
-                      "lg": "0.25rem",
-                      "xl": "0.5rem",
-                      "full": "0.75rem"
-              },
-              "spacing": {
-                      "margin": "32px",
-                      "md": "24px",
-                      "sm": "12px",
-                      "lg": "40px",
-                      "gutter": "24px",
-                      "xs": "4px",
-                      "xl": "64px",
-                      "base": "8px"
-              },
-              "fontFamily": {
-                      "headline-sm": ["Inter"],
-                      "headline-lg": ["Inter"],
-                      "display-lg": ["Inter"],
-                      "headline-md": ["Inter"],
-                      "body-md": ["Inter"],
-                      "label-md": ["Inter"],
-                      "body-sm": ["Inter"],
-                      "data-tabular": ["Inter"],
-                      "body-lg": ["Inter"]
-              },
-              "fontSize": {
-                      "headline-sm": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
-                      "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
-                      "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                      "headline-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
-                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
-                      "body-sm": ["12px", {"lineHeight": "16px", "fontWeight": "400"}],
-                      "data-tabular": ["14px", {"lineHeight": "20px", "fontWeight": "500"}],
-                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
-              }
-            }
-          }
-        }
-    </script>
     <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        .material-symbols-outlined.fill {
-            font-variation-settings: 'FILL' 1;
-        }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #000000; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle;}
+        body { font-family: 'Inter', sans-serif; }
+        .nav-active { background: #d3e4fe; color: #0b1c30; font-weight: 600; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #000; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="bg-surface text-on-surface font-body-md min-h-screen flex">
-    <!-- SideNavBar -->
-    <aside class="hidden lg:flex flex-col h-screen left-0 w-64 bg-surface-container-low shadow-sm p-sm gap-base z-20 sticky top-0 shrink-0 border-r border-outline-variant">
-        <div class="mb-lg px-sm pt-sm flex items-center gap-sm">
-            <div class="w-10 h-10 bg-primary text-on-primary rounded-lg flex items-center justify-center font-headline-md">I</div>
-            <div>
-                <h1 class="text-headline-sm font-headline-sm font-bold text-on-surface">CRM INJUSA</h1>
-                <p class="text-body-sm font-body-sm text-on-surface-variant">Commercial Tracking</p>
-            </div>
+<body class="bg-[#f7f9fb] min-h-screen flex text-[#191c1e]">
+
+    <!-- Sidebar -->
+    <aside class="hidden lg:flex flex-col w-64 bg-white border-r sticky top-0 h-screen p-4 gap-4">
+        <div class="flex items-center gap-3 mb-6 px-2">
+            <div class="w-10 h-10 bg-black text-white rounded-lg flex items-center justify-center font-bold">I</div>
+            <h1 class="text-lg font-bold">CRM INJUSA</h1>
         </div>
-        <button class="w-full bg-primary text-on-primary py-sm px-md rounded-lg text-label-md font-label-md flex items-center justify-center gap-sm mb-md hover:opacity-90">
-            <span class="material-symbols-outlined">add</span>
-            New Entry
-        </button>
-        <nav class="flex-1 flex flex-col gap-xs">
-            <a class="bg-secondary-fixed text-on-secondary-fixed rounded-lg py-sm px-sm flex items-center gap-md" href="#">
-                <span class="material-symbols-outlined fill">dashboard</span>
-                <span class="text-label-md font-label-md">Dashboard</span>
-            </a>
-            <a class="text-on-surface-variant hover:bg-surface-container-highest py-sm px-sm rounded-lg flex items-center gap-md transition-all" href="#">
-                <span class="material-symbols-outlined">group</span>
-                <span class="text-label-md font-label-md">Clients</span>
-            </a>
-            <a class="text-on-surface-variant hover:bg-surface-container-highest py-sm px-sm rounded-lg flex items-center gap-md transition-all" href="#">
-                <span class="material-symbols-outlined">payments</span>
-                <span class="text-label-md font-label-md">Budgets</span>
-            </a>
+        <nav class="flex flex-col gap-1">
+            <button onclick="showView('dashboard')" id="btn-dash" class="nav-active flex items-center gap-3 px-4 py-2 rounded-lg transition-all">
+                <span class="material-symbols-outlined">dashboard</span> Dashboard
+            </button>
+            <button onclick="showView('clients')" id="btn-clients" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all">
+                <span class="material-symbols-outlined">group</span> Clientes
+            </button>
         </nav>
-        <div class="mt-auto flex flex-col gap-xs border-t border-outline-variant pt-md">
-            <a class="text-on-surface-variant hover:bg-surface-container-highest py-sm px-sm rounded-lg flex items-center gap-md transition-all" href="#">
-                <span class="material-symbols-outlined">logout</span>
-                <span class="text-label-md font-label-md">Logout</span>
-            </a>
-        </div>
     </aside>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col min-w-0">
-        <!-- TopNavBar -->
-        <header class="bg-surface-container-lowest w-full px-margin h-16 flex justify-between items-center z-10 sticky top-0 border-b border-outline-variant">
-            <div class="flex items-center gap-gutter lg:hidden">
-                <h1 class="text-headline-md font-headline-md font-bold text-primary">CRM INJUSA</h1>
-            </div>
-            <div class="flex items-center gap-gutter ml-auto">
-                <div class="hidden md:flex items-center gap-sm">
-                    <span class="text-body-sm text-on-surface-variant">Área:</span>
-                    <select class="bg-surface-container-low border-none rounded-lg py-sm px-md text-label-md font-label-md focus:ring-1 focus:ring-primary">
-                        <option>Todas las Áreas</option>
-                    </select>
-                </div>
-            </div>
+    <!-- Main -->
+    <main class="flex-1 p-8 max-w-[1400px] mx-auto w-full">
+        <header class="flex justify-between items-center mb-8">
+            <h2 id="view-title" class="text-3xl font-bold">Resumen Comercial</h2>
+            <button onclick="fetchCRMData()" class="flex items-center gap-2 text-sm bg-white border px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <span class="material-symbols-outlined text-sm">refresh</span> Actualizar Datos
+            </button>
         </header>
 
-        <!-- Dashboard Content -->
-        <div class="p-margin max-w-[1440px] mx-auto w-full flex-1 flex flex-col gap-gutter">
-            <div class="flex justify-between items-center">
-                <h2 class="text-headline-lg font-headline-lg text-on-surface">Main Commercial Dashboard</h2>
-                <button onclick="fetchCRMData()" class="flex items-center gap-sm text-on-surface-variant hover:text-primary transition-colors text-label-md font-label-md">
-                    <span class="material-symbols-outlined">refresh</span>
-                    Actualizar Datos
-                </button>
-            </div>
+        <!-- Loader -->
+        <div id="loading" class="hidden flex-col items-center justify-center h-64">
+            <div class="loader"></div>
+            <p class="mt-4 text-gray-500 font-medium">Sincronizando con Google Sheets...</p>
+        </div>
 
-            <!-- KPI Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">
-                <div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant flex flex-col gap-sm">
-                    <div class="flex justify-between items-start">
-                        <span class="text-headline-sm font-headline-sm text-on-surface-variant">Total Clientes</span>
-                        <div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
-                            <span class="material-symbols-outlined text-[18px]">group</span>
-                        </div>
-                    </div>
-                    <span id="kpi-total-clientes" class="text-display-lg font-display-lg text-on-surface mt-sm">-</span>
+        <!-- VIEW: DASHBOARD (GRÁFICAS) -->
+        <div id="view-dashboard" class="space-y-8">
+            <!-- KPIs -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white p-6 rounded-xl border shadow-sm">
+                    <p class="text-sm text-gray-500 font-medium">Presupuesto Total</p>
+                    <h3 id="kpi-total" class="text-3xl font-bold mt-2">-</h3>
                 </div>
-                <div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant flex flex-col gap-sm">
-                    <div class="flex justify-between items-start">
-                        <span class="text-headline-sm font-headline-sm text-on-surface-variant">Presupuesto Total</span>
-                        <div class="w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center">
-                            <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
-                        </div>
-                    </div>
-                    <span id="kpi-presupuesto-total" class="text-display-lg font-display-lg text-on-surface mt-sm">-</span>
+                <div id="kpi-top-area" class="bg-white p-6 rounded-xl border shadow-sm">
+                    <p class="text-sm text-gray-500 font-medium">Área más Potente</p>
+                    <h3 class="text-3xl font-bold mt-2">-</h3>
                 </div>
-                <div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant flex flex-col gap-sm">
-                    <div class="flex justify-between items-start">
-                        <span class="text-headline-sm font-headline-sm text-on-surface-variant">% Cumplimiento</span>
-                        <div class="w-8 h-8 rounded-full bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center">
-                            <span class="material-symbols-outlined text-[18px]">analytics</span>
-                        </div>
-                    </div>
-                    <span id="kpi-cumplimiento" class="text-display-lg font-display-lg text-on-surface mt-sm">-</span>
-                </div>
-                <div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant flex flex-col gap-sm">
-                    <div class="flex justify-between items-start">
-                        <span class="text-headline-sm font-headline-sm text-on-surface-variant">Ventas Cerradas</span>
-                        <div class="w-8 h-8 rounded-full bg-secondary-fixed text-on-secondary-fixed flex items-center justify-center">
-                            <span class="material-symbols-outlined text-[18px]">check_circle</span>
-                        </div>
-                    </div>
-                    <span id="kpi-ventas-cerradas" class="text-display-lg font-display-lg text-on-surface mt-sm">-</span>
+                <div class="bg-white p-6 rounded-xl border shadow-sm">
+                    <p class="text-sm text-gray-500 font-medium">% Éxito Promedio</p>
+                    <h3 id="kpi-avg" class="text-3xl font-bold mt-2">-</h3>
                 </div>
             </div>
 
-            <!-- Detailed Table -->
-            <div class="bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden flex flex-col">
-                <div class="p-md border-b border-outline-variant flex justify-between items-center bg-surface-bright">
-                    <h3 class="text-headline-sm font-headline-sm text-on-surface">Tracking Detallado</h3>
+            <!-- Gráficas -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl border shadow-sm">
+                    <h4 class="font-bold mb-6 text-gray-800">Top 10 Clientes por Importe</h4>
+                    <canvas id="chart-clientes" height="300"></canvas>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-outline-variant bg-surface-container-lowest">
-                                <th class="p-sm text-label-md font-label-md text-on-surface-variant">Cliente</th>
-                                <th class="p-sm text-label-md font-label-md text-on-surface-variant">Área</th>
-                                <th class="p-sm text-label-md font-label-md text-on-surface-variant text-right">Presupuesto</th>
-                                <th class="p-sm text-label-md font-label-md text-on-surface-variant">Estado</th>
-                                <th class="p-sm text-label-md font-label-md text-on-surface-variant w-1/4">Cumplimiento</th>
-                            </tr>
-                        </thead>
-                        <tbody id="crm-table-body" class="text-data-tabular font-data-tabular text-on-surface">
-                            <!-- JS inyectará las filas dinámicamente aquí -->
-                        </tbody>
-                    </table>
+                <div class="bg-white p-6 rounded-xl border shadow-sm">
+                    <h4 class="font-bold mb-6 text-gray-800">Distribución de Ventas por Área</h4>
+                    <canvas id="chart-areas-ventas" height="300"></canvas>
                 </div>
+                <div class="bg-white p-6 rounded-xl border shadow-sm lg:col-span-2">
+                    <h4 class="font-bold mb-6 text-gray-800">% Cumplimiento Medio por Área</h4>
+                    <canvas id="chart-areas-exito" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: CLIENTS (DETALLE) -->
+        <div id="view-clients" class="hidden bg-white border rounded-xl shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="p-4 text-xs font-bold uppercase text-gray-500">Cliente</th>
+                            <th class="p-4 text-xs font-bold uppercase text-gray-500">Área</th>
+                            <th class="p-4 text-xs font-bold uppercase text-gray-500 text-right">Presupuesto</th>
+                            <th class="p-4 text-xs font-bold uppercase text-gray-500 w-1/4">Éxito Objetivo</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y"></tbody>
+                </table>
             </div>
         </div>
     </main>
 
-    <!-- JS LOGIC - CONEXIÓN CON GOOGLE SHEETS -->
     <script>
+        // URL DE TU API DE GOOGLE SHEETS
         const API_URL = 'https://script.google.com/macros/s/AKfycbxCXZbP6BpR_GcRlEaScTgUJdhqqmEegZIQNeFcFp4QXjP-tQfX6gT0rRqzo7H9_xto/exec';
+        
+        let charts = {};
 
-        async function fetchCRMData() {
-            const tbody = document.getElementById('crm-table-body');
-            // Estado de Carga
-            tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-on-surface-variant"><div class="loader mr-2"></div> Obteniendo datos en tiempo real de Google Sheets...</td></tr>';
-
-            try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
-                
-                updateDashboardKPIs(data);
-                renderTable(data);
-            } catch (error) {
-                console.error("Error al obtener los datos:", error);
-                tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-error">❌ Hubo un error al descargar la base de datos. Comprueba la consola.</td></tr>';
-            }
+        function showView(view) {
+            document.getElementById('view-dashboard').classList.toggle('hidden', view !== 'dashboard');
+            document.getElementById('view-clients').classList.toggle('hidden', view !== 'clients');
+            document.getElementById('btn-dash').className = view === 'dashboard' ? 'nav-active flex items-center gap-3 px-4 py-2 rounded-lg transition-all' : 'flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all';
+            document.getElementById('btn-clients').className = view === 'clients' ? 'nav-active flex items-center gap-3 px-4 py-2 rounded-lg transition-all' : 'flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all';
+            document.getElementById('view-title').innerText = view === 'dashboard' ? 'Resumen Comercial' : 'Directorio de Clientes';
         }
 
-        // Formateador de moneda (Euro)
-        const formatCurrency = (num) => {
-            return new Intl.NumberFormat('es-ES', { 
-                style: 'currency', 
-                currency: 'EUR',
-                maximumFractionDigits: 0
-            }).format(num);
-        };
-
-        function updateDashboardKPIs(data) {
-            if (!data || data.length === 0) return;
-
-            const totalClientes = data.length;
-            const presupuestoTotal = data.reduce((acc, curr) => acc + (curr.presupuesto || 0), 0);
+        async function fetchCRMData() {
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('view-dashboard').classList.add('opacity-50');
+            document.getElementById('view-clients').classList.add('opacity-50');
             
-            // Filtramos ventas consideradas "cerradas" o "ganadas" (ignorando mayúsculas/minúsculas)
-            const ventasCerradas = data
-                .filter(item => {
-                    const status = (item.estado || "").toLowerCase();
-                    return status.includes("cerrado") || status.includes("ganado");
-                })
-                .reduce((acc, curr) => acc + (curr.presupuesto || 0), 0);
+            try {
+                const response = await fetch(API_URL, { redirect: "follow" });
+                if (!response.ok) throw new Error("Error de red");
+                const data = await response.json();
                 
-            const cumplimientoPromedio = data.reduce((acc, curr) => acc + (curr.cumplimiento || 0), 0) / (totalClientes || 1);
+                processDashboard(data);
+                renderTable(data);
+            } catch (e) { 
+                console.error("Error al cargar datos:", e);
+                alert("Hubo un error al descargar la base de datos. Comprueba la consola.");
+            }
+            
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.remove('opacity-50');
+            document.getElementById('view-clients').classList.remove('opacity-50');
+        }
 
-            // Inyectar en el DOM
-            document.getElementById('kpi-total-clientes').textContent = totalClientes;
-            document.getElementById('kpi-presupuesto-total').textContent = formatCurrency(presupuestoTotal);
-            document.getElementById('kpi-ventas-cerradas').textContent = formatCurrency(ventasCerradas);
-            document.getElementById('kpi-cumplimiento').textContent = cumplimientoPromedio.toFixed(1) + '%';
+        function processDashboard(data) {
+            // Filtrar datos vacíos para evitar cálculos erróneos
+            const validData = data.filter(item => item.cliente && item.cliente.trim() !== "");
+
+            // 1. KPIs
+            const total = validData.reduce((a, b) => a + (b.presupuesto || 0), 0);
+            document.getElementById('kpi-total').innerText = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(total);
+            
+            const avgExito = validData.length > 0 ? (validData.reduce((a, b) => a + (b.cumplimiento || 0), 0) / validData.length) : 0;
+            document.getElementById('kpi-avg').innerText = avgExito.toFixed(1) + '%';
+
+            // 2. Gráfica Top Clientes
+            const topClientes = [...validData].sort((a, b) => (b.presupuesto || 0) - (a.presupuesto || 0)).slice(0, 10);
+            updateChart('chart-clientes', 'bar', topClientes.map(c => c.cliente), topClientes.map(c => c.presupuesto || 0), 'Importe €', '#000000');
+
+            // 3. Procesamiento por Áreas
+            const areasMap = {};
+            validData.forEach(item => {
+                const areaName = item.area || 'Sin Área Asignada';
+                if (!areasMap[areaName]) areasMap[areaName] = { ventas: 0, exito: [], count: 0 };
+                areasMap[areaName].ventas += (item.presupuesto || 0);
+                areasMap[areaName].exito.push(item.cumplimiento || 0);
+                areasMap[areaName].count++;
+            });
+
+            const areasLabels = Object.keys(areasMap);
+            const ventasPorArea = areasLabels.map(l => areasMap[l].ventas);
+            
+            updateChart('chart-areas-ventas', 'doughnut', areasLabels, ventasPorArea, 'Ventas por Área');
+            
+            const exitoPorArea = areasLabels.map(l => areasMap[l].exito.reduce((a, b) => a + b, 0) / areasMap[l].count);
+            updateChart('chart-areas-exito', 'bar', areasLabels, exitoPorArea, '% Éxito Medio', '#505f76');
+
+            // KPI Área Top
+            let topAreaName = "-";
+            if (areasLabels.length > 0) {
+                topAreaName = areasLabels.reduce((a, b) => areasMap[a].ventas > areasMap[b].ventas ? a : b);
+            }
+            document.querySelector('#kpi-top-area h3').innerText = topAreaName;
+        }
+
+        function updateChart(id, type, labels, data, label, color) {
+            if (charts[id]) charts[id].destroy();
+            const ctx = document.getElementById(id).getContext('2d');
+            
+            const config = {
+                type: type,
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: label,
+                        data: data,
+                        backgroundColor: type === 'doughnut' ? ['#000000', '#505f76', '#bec6e0', '#d3e4fe', '#eceef0', '#98805d', '#e0e3e5'] : color,
+                        borderWidth: type === 'doughnut' ? 2 : 0,
+                        borderColor: '#ffffff',
+                        borderRadius: type === 'bar' ? 4 : 0
+                    }]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: type === 'doughnut', position: 'right' } 
+                    },
+                    scales: type === 'bar' ? {
+                        y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                        x: { grid: { display: false } }
+                    } : {}
+                }
+            };
+            charts[id] = new Chart(ctx, config);
         }
 
         function renderTable(data) {
-            const tbody = document.getElementById('crm-table-body');
-            tbody.innerHTML = ''; // Limpiar estado de carga
-
-            data.forEach(item => {
-                const row = document.createElement('tr');
-                row.className = 'border-b border-outline-variant/50 hover:bg-surface-container-lowest transition-colors';
+            const body = document.getElementById('table-body');
+            const validData = data.filter(item => item.cliente && item.cliente.trim() !== "");
+            
+            body.innerHTML = validData.map(item => {
+                let p = item.presupuesto || 0;
+                let c = item.cumplimiento || 0;
                 
-                // Lógica de colores según el % de cumplimiento
-                let barColorClass = 'bg-primary'; 
-                let percent = item.cumplimiento || 0;
-                if (percent < 50) barColorClass = 'bg-error';
-                else if (percent >= 50 && percent < 90) barColorClass = 'bg-secondary';
-
-                row.innerHTML = `
-                    <td class="p-sm font-medium">${item.cliente || 'Desconocido'}</td>
-                    <td class="p-sm text-on-surface-variant text-body-sm">${item.area || '-'}</td>
-                    <td class="p-sm text-right">${formatCurrency(item.presupuesto || 0)}</td>
-                    <td class="p-sm">
-                        <span class="px-2 py-1 rounded-full bg-surface-container-highest text-on-surface text-label-md">
-                            ${item.estado || 'Sin estado'}
-                        </span>
-                    </td>
-                    <td class="p-sm">
-                        <div class="flex items-center gap-sm">
-                            <div class="flex-1 h-1 bg-surface-container-highest rounded-full overflow-hidden">
-                                <div class="h-full ${barColorClass}" style="width: ${percent}%;"></div>
+                // Color de la barra de progreso
+                let barColor = 'bg-[#000000]';
+                if (c < 50) barColor = 'bg-[#ba1a1a]'; // Rojo
+                else if (c >= 50 && c < 80) barColor = 'bg-[#505f76]'; // Azul grisáceo
+                
+                return `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="p-4 font-medium text-sm text-gray-900">${item.cliente}</td>
+                    <td class="p-4 text-gray-500 text-sm">${item.area || '-'}</td>
+                    <td class="p-4 text-right text-sm font-medium">${new Intl.NumberFormat('es-ES').format(p)} €</td>
+                    <td class="p-4">
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div class="h-full ${barColor}" style="width: ${c > 100 ? 100 : c}%"></div>
                             </div>
-                            <span class="text-label-md w-8 text-right">${percent.toFixed(0)}%</span>
+                            <span class="text-xs font-bold w-10 text-right text-gray-700">${c.toFixed(0)}%</span>
                         </div>
                     </td>
-                `;
-                tbody.appendChild(row);
-            });
+                </tr>
+            `}).join('');
         }
 
-        // Cargar datos automáticamente al abrir la página
-        window.addEventListener('DOMContentLoaded', fetchCRMData);
+        // Arrancar la carga de datos al cargar la ventana
+        window.onload = fetchCRMData;
     </script>
 </body>
 </html>
