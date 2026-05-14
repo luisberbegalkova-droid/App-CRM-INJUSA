@@ -146,22 +146,29 @@
             document.getElementById('loader').classList.remove('hidden');
             try {
                 const response = await fetch(API_URL, { redirect: "follow" });
+                
+                if (!response.ok) throw new Error("Error en el servidor de Google: " + response.status);
+                
                 const data = await response.json();
                 
-                // Limpiar filas vacías
-                const validData = data.filter(item => item.cliente && item.cliente.trim() !== "");
+                // Si Google nos devuelve un error de Apps Script, lo mostramos
+                if(data.error) throw new Error("Error de Apps Script: " + data.error);
+                if(data.length === 0) throw new Error("La hoja de cálculo está vacía o las columnas no coinciden.");
+
+                // Limpiar filas vacías (Forzamos a String para evitar bloqueos si un cliente es un número)
+                const validData = data.filter(item => item.cliente && String(item.cliente).trim() !== "");
                 
                 processDashboard(validData);
                 renderTable(validData);
+                
             } catch (error) {
                 console.error(error);
-                alert("No se pudieron cargar los datos de Google Sheets.");
+                alert("DETALLE DEL ERROR: \n" + error.message + "\n\nPor favor envíame este texto para solucionarlo.");
             }
             document.getElementById('loader').classList.add('hidden');
         }
 
         function processDashboard(data) {
-            // 1. AGRUPAR DATOS POR ÁREA COMERCIAL ("Aplastado")
             const groupedAreas = {};
             let totalEurosGlobal = 0;
             let sumExitoGlobal = 0;
@@ -182,7 +189,6 @@
                 groupedAreas[area].count += 1;
             });
 
-            // Convertir objeto agrupado a Array y calcular promedios
             const areasArray = Object.keys(groupedAreas).map(areaName => {
                 return {
                     name: areaName,
@@ -191,16 +197,15 @@
                 };
             });
 
-            // Ordenar áreas de mayor a menor importe
             areasArray.sort((a, b) => b.presupuesto - a.presupuesto);
 
-            // 2. ACTUALIZAR KPIs
+            // KPIs
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasArray.length > 0 ? areasArray[0].name : '-';
             const exitoMedioGlobal = data.length > 0 ? (sumExitoGlobal / data.length) : 0;
             document.getElementById('kpi-avg').innerText = exitoMedioGlobal.toFixed(1) + '%';
 
-            // 3. GRÁFICA: BARRAS - PRESUPUESTO POR ÁREA
+            // GRÁFICA 1: BARRAS - PRESUPUESTO
             drawChart('chart-areas-budget', 'bar', {
                 labels: areasArray.map(a => a.name),
                 datasets: [{
@@ -211,47 +216,41 @@
                 }]
             });
 
-            // 4. GRÁFICA: QUESO - TOP 15 CLIENTES
-            const top15Clients = [...data].sort((a, b) => (b.presupuesto || 0) - (a.presupuesto || 0)).slice(0, 15);
+            // GRÁFICA 2: QUESO - TOP 15
+            const top15Clients = [...data].sort((a, b) => (Number(b.presupuesto) || 0) - (Number(a.presupuesto) || 0)).slice(0, 15);
             drawChart('chart-pie', 'doughnut', {
-                labels: top15Clients.map(c => c.cliente),
+                labels: top15Clients.map(c => String(c.cliente)),
                 datasets: [{
-                    data: top15Clients.map(c => c.presupuesto),
+                    data: top15Clients.map(c => Number(c.presupuesto) || 0),
                     backgroundColor: ['#000', '#1e3a8a', '#1d4ed8', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#e5e7eb', '#9ca3af', '#6b7280', '#4b5563', '#374151', '#1f2937', '#111827'],
                     borderWidth: 2, borderColor: '#fff'
                 }]
-            }, { 
-                plugins: { legend: { display: false } }, // Ocultar leyenda para no saturar, se ve al pasar el ratón
-                cutout: '65%' 
-            });
+            }, { plugins: { legend: { display: false } }, cutout: '65%' });
 
-            // 5. GRÁFICA: BARRAS - ÉXITO POR ÁREA
+            // GRÁFICA 3: ÉXITO
             drawChart('chart-areas-success', 'bar', {
                 labels: areasArray.map(a => a.name),
                 datasets: [{
                     label: '% Éxito Medio',
                     data: areasArray.map(a => a.exitoMedio),
-                    backgroundColor: '#2563eb', // Azul
+                    backgroundColor: '#2563eb',
                     borderRadius: 6
                 }]
             });
         }
 
-        // Renderizado de la tabla detallada (Pestaña Clientes)
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
             tbody.innerHTML = data.map(item => {
-                let p = item.presupuesto || 0;
-                let c = item.cumplimiento || 0;
+                let p = Number(item.presupuesto) || 0;
+                let c = Number(item.cumplimiento) || 0;
                 
-                // Color de la barra
                 let barColor = 'bg-blue-600';
                 if (c < 50) barColor = 'bg-red-600';
                 else if (c >= 100) barColor = 'bg-green-500';
                 else if (c >= 50 && c < 80) barColor = 'bg-gray-800';
 
-                // Color del Badge de Estado
-                const estado = item.estado || 'Pendiente';
+                const estado = String(item.estado || 'Pendiente');
                 let badgeClass = 'bg-gray-100 text-gray-700';
                 if(estado.toLowerCase().includes('positivo') || estado.toLowerCase().includes('ganado') || estado.toLowerCase().includes('superado')) badgeClass = 'bg-green-100 text-green-800';
                 if(estado.toLowerCase().includes('negativo') || estado.toLowerCase().includes('perdido')) badgeClass = 'bg-red-100 text-red-800';
@@ -276,7 +275,6 @@
             `}).join('');
         }
 
-        // Función auxiliar para inicializar Chart.js limpiamente
         function drawChart(id, type, data, extraOptions = {}) {
             if (chartInstances[id]) chartInstances[id].destroy();
             const ctx = document.getElementById(id).getContext('2d');
