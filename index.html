@@ -1,246 +1,161 @@
 <!DOCTYPE html>
-<html class="light" lang="es">
+<html lang="es">
 <head>
     <meta charset="utf-8" />
-    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>INJUSA CRM - Analytics</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>INJUSA CRM - Pro Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .nav-active { background: #d3e4fe; color: #0b1c30; font-weight: 600; }
-        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #000; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        body { font-family: 'Inter', sans-serif; overflow: hidden; } /* Evita scroll global */
+        .kpi-card { background: white; border-radius: 1.5rem; padding: 1.5rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .chart-container { position: relative; height: 35vh; width: 100%; }
     </style>
 </head>
-<body class="bg-[#f7f9fb] min-h-screen flex text-[#191c1e]">
+<body class="bg-[#f0f2f5] h-screen flex flex-col p-6">
 
-    <!-- Sidebar -->
-    <aside class="hidden lg:flex flex-col w-64 bg-white border-r sticky top-0 h-screen p-4 gap-4">
-        <div class="flex items-center gap-3 mb-6 px-2">
+    <!-- HEADER & REFRESH -->
+    <header class="flex justify-between items-center mb-6">
+        <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-black text-white rounded-lg flex items-center justify-center font-bold">I</div>
-            <h1 class="text-lg font-bold">CRM INJUSA</h1>
+            <h1 class="text-xl font-bold tracking-tight">COMERCIAL ANALYTICS INJUSA</h1>
         </div>
-        <nav class="flex flex-col gap-1">
-            <button onclick="showView('dashboard')" id="btn-dash" class="nav-active flex items-center gap-3 px-4 py-2 rounded-lg transition-all">
-                <span class="material-symbols-outlined">dashboard</span> Dashboard
-            </button>
-            <button onclick="showView('clients')" id="btn-clients" class="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all">
-                <span class="material-symbols-outlined">group</span> Clientes
-            </button>
-        </nav>
-    </aside>
+        <button onclick="fetchCRMData()" class="bg-black text-white px-5 py-2 rounded-full text-sm font-bold hover:bg-gray-800 transition-all flex items-center gap-2">
+            ACTUALIZAR DATOS
+        </button>
+    </header>
 
-    <!-- Main -->
-    <main class="flex-1 p-8 max-w-[1400px] mx-auto w-full">
-        <header class="flex justify-between items-center mb-8">
-            <h2 id="view-title" class="text-3xl font-bold">Resumen Comercial</h2>
-            <button onclick="fetchCRMData()" class="flex items-center gap-2 text-sm bg-white border px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <span class="material-symbols-outlined text-sm">refresh</span> Actualizar Datos
-            </button>
-        </header>
-
-        <!-- Loader -->
-        <div id="loading" class="hidden flex-col items-center justify-center h-64">
-            <div class="loader"></div>
-            <p class="mt-4 text-gray-500 font-medium">Sincronizando con Google Sheets...</p>
+    <!-- KPI BUBBLES -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="kpi-card text-center">
+            <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Presupuesto Global</p>
+            <h2 id="kpi-total" class="text-3xl font-black text-black">0 €</h2>
         </div>
+        <div class="kpi-card text-center border-l-4 border-l-blue-500">
+            <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Área Líder</p>
+            <h2 id="kpi-top-area" class="text-2xl font-black text-black">-</h2>
+        </div>
+        <div class="kpi-card text-center">
+            <p class="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Éxito Objetivo Total</p>
+            <h2 id="kpi-avg" class="text-3xl font-black text-blue-600">0%</h2>
+        </div>
+    </div>
 
-        <!-- VIEW: DASHBOARD (GRÁFICAS) -->
-        <div id="view-dashboard" class="space-y-8">
-            <!-- KPIs -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-white p-6 rounded-xl border shadow-sm">
-                    <p class="text-sm text-gray-500 font-medium">Presupuesto Total</p>
-                    <h3 id="kpi-total" class="text-3xl font-bold mt-2">-</h3>
-                </div>
-                <div id="kpi-top-area" class="bg-white p-6 rounded-xl border shadow-sm">
-                    <p class="text-sm text-gray-500 font-medium">Área más Potente</p>
-                    <h3 class="text-3xl font-bold mt-2">-</h3>
-                </div>
-                <div class="bg-white p-6 rounded-xl border shadow-sm">
-                    <p class="text-sm text-gray-500 font-medium">% Éxito Promedio</p>
-                    <h3 id="kpi-avg" class="text-3xl font-bold mt-2">-</h3>
-                </div>
-            </div>
-
-            <!-- Gráficas -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-xl border shadow-sm">
-                    <h4 class="font-bold mb-6 text-gray-800">Top 10 Clientes por Importe</h4>
-                    <canvas id="chart-clientes" height="300"></canvas>
-                </div>
-                <div class="bg-white p-6 rounded-xl border shadow-sm">
-                    <h4 class="font-bold mb-6 text-gray-800">Distribución de Ventas por Área</h4>
-                    <canvas id="chart-areas-ventas" height="300"></canvas>
-                </div>
-                <div class="bg-white p-6 rounded-xl border shadow-sm lg:col-span-2">
-                    <h4 class="font-bold mb-6 text-gray-800">% Cumplimiento Medio por Área</h4>
-                    <canvas id="chart-areas-exito" height="200"></canvas>
-                </div>
+    <!-- MAIN DASHBOARD CONTENT -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1 overflow-hidden">
+        
+        <!-- BAR CHART: AREAS (Sorted) -->
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm flex flex-col">
+            <h4 class="text-sm font-black uppercase mb-4 text-gray-400">Ranking Áreas Comerciales (Importe)</h4>
+            <div class="chart-container">
+                <canvas id="chart-areas"></canvas>
             </div>
         </div>
 
-        <!-- VIEW: CLIENTS (DETALLE) -->
-        <div id="view-clients" class="hidden bg-white border rounded-xl shadow-sm overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead class="bg-gray-50 border-b">
-                        <tr>
-                            <th class="p-4 text-xs font-bold uppercase text-gray-500">Cliente</th>
-                            <th class="p-4 text-xs font-bold uppercase text-gray-500">Área</th>
-                            <th class="p-4 text-xs font-bold uppercase text-gray-500 text-right">Presupuesto</th>
-                            <th class="p-4 text-xs font-bold uppercase text-gray-500 w-1/4">Éxito Objetivo</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-body" class="divide-y"></tbody>
-                </table>
+        <!-- PIE CHART: TOP CLIENTS (The "Cheese") -->
+        <div class="bg-white p-6 rounded-[2rem] shadow-sm flex flex-col">
+            <h4 class="text-sm font-black uppercase mb-4 text-gray-400">Distribución Top 15 Clientes</h4>
+            <div class="chart-container">
+                <canvas id="chart-pie-clientes"></canvas>
             </div>
         </div>
-    </main>
+
+    </div>
+
+    <!-- MODAL CARGA -->
+    <div id="loader" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+            <p class="mt-4 font-bold">SINCRONIZANDO CRM...</p>
+        </div>
+    </div>
 
     <script>
-        // URL DE TU API DE GOOGLE SHEETS
         const API_URL = 'https://script.google.com/macros/s/AKfycbxCXZbP6BpR_GcRlEaScTgUJdhqqmEegZIQNeFcFp4QXjP-tQfX6gT0rRqzo7H9_xto/exec';
-        
         let charts = {};
 
-        function showView(view) {
-            document.getElementById('view-dashboard').classList.toggle('hidden', view !== 'dashboard');
-            document.getElementById('view-clients').classList.toggle('hidden', view !== 'clients');
-            document.getElementById('btn-dash').className = view === 'dashboard' ? 'nav-active flex items-center gap-3 px-4 py-2 rounded-lg transition-all' : 'flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all';
-            document.getElementById('btn-clients').className = view === 'clients' ? 'nav-active flex items-center gap-3 px-4 py-2 rounded-lg transition-all' : 'flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-gray-100 transition-all';
-            document.getElementById('view-title').innerText = view === 'dashboard' ? 'Resumen Comercial' : 'Directorio de Clientes';
-        }
-
         async function fetchCRMData() {
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('view-dashboard').classList.add('opacity-50');
-            document.getElementById('view-clients').classList.add('opacity-50');
-            
+            document.getElementById('loader').classList.remove('hidden');
             try {
-                const response = await fetch(API_URL, { redirect: "follow" });
-                if (!response.ok) throw new Error("Error de red");
+                const response = await fetch(API_URL);
                 const data = await response.json();
+                const validData = data.filter(item => item.cliente && item.cliente.trim() !== "");
                 
-                processDashboard(data);
-                renderTable(data);
-            } catch (e) { 
-                console.error("Error al cargar datos:", e);
-                alert("Hubo un error al descargar la base de datos. Comprueba la consola.");
+                renderDashboard(validData);
+            } catch (e) {
+                console.error(error);
+                alert("Error al conectar con la hoja de cálculo.");
             }
-            
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('view-dashboard').classList.remove('opacity-50');
-            document.getElementById('view-clients').classList.remove('opacity-50');
+            document.getElementById('loader').classList.add('hidden');
         }
 
-        function processDashboard(data) {
-            // Filtrar datos vacíos para evitar cálculos erróneos
-            const validData = data.filter(item => item.cliente && item.cliente.trim() !== "");
+        function renderDashboard(data) {
+            // 1. CÁLCULO DE KPIs
+            const totalEuros = data.reduce((a, b) => a + (b.presupuesto || 0), 0);
+            const exitoMedio = data.reduce((a, b) => a + (b.cumplimiento || 0), 0) / data.length;
 
-            // 1. KPIs
-            const total = validData.reduce((a, b) => a + (b.presupuesto || 0), 0);
-            document.getElementById('kpi-total').innerText = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(total);
-            
-            const avgExito = validData.length > 0 ? (validData.reduce((a, b) => a + (b.cumplimiento || 0), 0) / validData.length) : 0;
-            document.getElementById('kpi-avg').innerText = avgExito.toFixed(1) + '%';
+            document.getElementById('kpi-total').innerText = new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(totalEuros);
+            document.getElementById('kpi-avg').innerText = exitoMedio.toFixed(1) + '%';
 
-            // 2. Gráfica Top Clientes
-            const topClientes = [...validData].sort((a, b) => (b.presupuesto || 0) - (a.presupuesto || 0)).slice(0, 10);
-            updateChart('chart-clientes', 'bar', topClientes.map(c => c.cliente), topClientes.map(c => c.presupuesto || 0), 'Importe €', '#000000');
-
-            // 3. Procesamiento por Áreas
+            // 2. PROCESAR ÁREAS (ORDENADAS)
             const areasMap = {};
-            validData.forEach(item => {
-                const areaName = item.area || 'Sin Área Asignada';
-                if (!areasMap[areaName]) areasMap[areaName] = { ventas: 0, exito: [], count: 0 };
-                areasMap[areaName].ventas += (item.presupuesto || 0);
-                areasMap[areaName].exito.push(item.cumplimiento || 0);
-                areasMap[areaName].count++;
+            data.forEach(item => {
+                const area = item.area || 'Sin Área';
+                areasMap[area] = (areasMap[area] || 0) + item.presupuesto;
             });
 
-            const areasLabels = Object.keys(areasMap);
-            const ventasPorArea = areasLabels.map(l => areasMap[l].ventas);
+            // Ordenar áreas de mayor a menor importe
+            const sortedAreas = Object.entries(areasMap)
+                .sort((a, b) => b[1] - a[1]);
             
-            updateChart('chart-areas-ventas', 'doughnut', areasLabels, ventasPorArea, 'Ventas por Área');
-            
-            const exitoPorArea = areasLabels.map(l => areasMap[l].exito.reduce((a, b) => a + b, 0) / areasMap[l].count);
-            updateChart('chart-areas-exito', 'bar', areasLabels, exitoPorArea, '% Éxito Medio', '#505f76');
+            document.getElementById('kpi-top-area').innerText = sortedAreas[0] ? sortedAreas[0][0] : '-';
 
-            // KPI Área Top
-            let topAreaName = "-";
-            if (areasLabels.length > 0) {
-                topAreaName = areasLabels.reduce((a, b) => areasMap[a].ventas > areasMap[b].ventas ? a : b);
-            }
-            document.querySelector('#kpi-top-area h3').innerText = topAreaName;
+            initChart('chart-areas', 'bar', {
+                labels: sortedAreas.map(a => a[0]),
+                datasets: [{
+                    label: 'Importe Total €',
+                    data: sortedAreas.map(a => a[1]),
+                    backgroundColor: '#000',
+                    borderRadius: 10
+                }]
+            });
+
+            // 3. TOP 15 CLIENTES (EL QUESO)
+            const sortedClients = [...data]
+                .sort((a, b) => b.presupuesto - a.presupuesto)
+                .slice(0, 15);
+
+            initChart('chart-pie-clientes', 'doughnut', {
+                labels: sortedClients.map(c => c.cliente),
+                datasets: [{
+                    data: sortedClients.map(c => c.presupuesto),
+                    backgroundColor: ['#000', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#d1d5db', '#e5e7eb', '#f3f4f6', '#000', '#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            }, { 
+                plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } },
+                cutout: '60%'
+            });
         }
 
-        function updateChart(id, type, labels, data, label, color) {
+        function initChart(id, type, data, extraOptions = {}) {
             if (charts[id]) charts[id].destroy();
             const ctx = document.getElementById(id).getContext('2d');
-            
-            const config = {
+            charts[id] = new Chart(ctx, {
                 type: type,
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: label,
-                        data: data,
-                        backgroundColor: type === 'doughnut' ? ['#000000', '#505f76', '#bec6e0', '#d3e4fe', '#eceef0', '#98805d', '#e0e3e5'] : color,
-                        borderWidth: type === 'doughnut' ? 2 : 0,
-                        borderColor: '#ffffff',
-                        borderRadius: type === 'bar' ? 4 : 0
-                    }]
-                },
-                options: { 
-                    responsive: true, 
+                data: data,
+                options: {
+                    responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { 
-                        legend: { display: type === 'doughnut', position: 'right' } 
-                    },
-                    scales: type === 'bar' ? {
-                        y: { beginAtZero: true, grid: { color: '#f3f4f6' } },
-                        x: { grid: { display: false } }
-                    } : {}
+                    plugins: { legend: { display: type === 'doughnut' } },
+                    scales: type === 'bar' ? { y: { beginAtZero: true }, x: { grid: { display: false } } } : {},
+                    ...extraOptions
                 }
-            };
-            charts[id] = new Chart(ctx, config);
+            });
         }
 
-        function renderTable(data) {
-            const body = document.getElementById('table-body');
-            const validData = data.filter(item => item.cliente && item.cliente.trim() !== "");
-            
-            body.innerHTML = validData.map(item => {
-                let p = item.presupuesto || 0;
-                let c = item.cumplimiento || 0;
-                
-                // Color de la barra de progreso
-                let barColor = 'bg-[#000000]';
-                if (c < 50) barColor = 'bg-[#ba1a1a]'; // Rojo
-                else if (c >= 50 && c < 80) barColor = 'bg-[#505f76]'; // Azul grisáceo
-                
-                return `
-                <tr class="hover:bg-gray-50 transition-colors">
-                    <td class="p-4 font-medium text-sm text-gray-900">${item.cliente}</td>
-                    <td class="p-4 text-gray-500 text-sm">${item.area || '-'}</td>
-                    <td class="p-4 text-right text-sm font-medium">${new Intl.NumberFormat('es-ES').format(p)} €</td>
-                    <td class="p-4">
-                        <div class="flex items-center gap-3">
-                            <div class="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                                <div class="h-full ${barColor}" style="width: ${c > 100 ? 100 : c}%"></div>
-                            </div>
-                            <span class="text-xs font-bold w-10 text-right text-gray-700">${c.toFixed(0)}%</span>
-                        </div>
-                    </td>
-                </tr>
-            `}).join('');
-        }
-
-        // Arrancar la carga de datos al cargar la ventana
         window.onload = fetchCRMData;
     </script>
 </body>
