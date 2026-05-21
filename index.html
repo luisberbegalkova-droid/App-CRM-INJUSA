@@ -107,10 +107,15 @@
                             <tr>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Cliente</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Área Comercial</th>
-                                <th onclick="toggleSortPresupuesto()" class="p-4 text-xs font-bold uppercase text-gray-600 text-right whitespace-nowrap cursor-pointer hover:bg-gray-200 transition-colors select-none">
-                                    Presupuesto <span id="sort-indicator" class="ml-1 text-gray-900">▼</span>
+                                
+                                <th onclick="handleSort('presupuesto')" class="p-4 text-xs font-bold uppercase text-gray-600 text-right whitespace-nowrap cursor-pointer hover:bg-gray-200 transition-colors select-none">
+                                    Presupuesto <span id="sort-presupuesto" class="ml-1 text-gray-900">▼</span>
                                 </th>
-                                <th class="p-4 text-xs font-bold uppercase text-gray-500 text-right whitespace-nowrap">Pedidos</th>
+                                
+                                <th onclick="handleSort('pedidos')" class="p-4 text-xs font-bold uppercase text-gray-600 text-right whitespace-nowrap cursor-pointer hover:bg-gray-200 transition-colors select-none">
+                                    Pedidos <span id="sort-pedidos" class="ml-1 text-gray-300">▼</span>
+                                </th>
+                                
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap text-center">Estado</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 w-64 whitespace-nowrap">Éxito Objetivo (% Completado)</th>
                             </tr>
@@ -132,8 +137,9 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbxCXZbP6BpR_GcRlEaScTgUJdhqqmEegZIQNeFcFp4QXjP-tQfX6gT0rRqzo7H9_xto/exec';
         let chartInstances = {};
-        let globalRawData = []; // Caché de datos para filtros veloces
-        let sortDirection = 'desc'; // Dirección inicial por defecto ('desc' o 'asc')
+        let globalRawData = []; // Almacenamiento en caché de datos
+        let sortColumn = 'presupuesto'; // Columna activa por defecto
+        let sortDirection = 'desc'; // Dirección activa por defecto
         
         Chart.register(ChartDataLabels);
 
@@ -162,12 +168,11 @@
                 const response = await fetch(API_URL, { redirect: "follow" });
                 const data = await response.json();
                 
-                // Guardamos los datos limpios en memoria global
                 globalRawData = data.filter(item => item.cliente && item.cliente.trim() !== "");
                 
                 populateAreaSelector(globalRawData);
                 processDashboard(globalRawData);
-                applyFilters(); // Renderiza la tabla aplicando orden y filtros activos
+                applyFilters(); 
             } catch (error) {
                 console.error(error);
                 alert("Error de conexión con Google Sheets.");
@@ -175,10 +180,8 @@
             document.getElementById('loader').classList.add('hidden');
         }
 
-        // Genera el listado único de Áreas en el desplegable de filtros
         function populateAreaSelector(data) {
             const selectArea = document.getElementById('filter-area');
-            // Resetear manteniendo la opción inicial
             selectArea.innerHTML = '<option value="">Todas las Áreas</option>';
             
             const uniqueAreas = [...new Set(data.map(item => item.area).filter(Boolean))].sort();
@@ -190,36 +193,55 @@
             });
         }
 
-        // Alterna el sentido de la ordenación al clicar en la columna
-        function toggleSortPresupuesto() {
-            sortDirection = (sortDirection === 'desc') ? 'asc' : 'desc';
-            document.getElementById('sort-indicator').textContent = (sortDirection === 'desc') ? '▼' : '▲';
+        // CONTROLADOR DE ORDENACIÓN INTEGRAL (PRESUPUESTO O PEDIDOS)
+        function handleSort(column) {
+            if (sortColumn === column) {
+                // Si vuelve a pulsar en la misma columna, invierte la dirección
+                sortDirection = (sortDirection === 'desc') ? 'asc' : 'desc';
+            } else {
+                // Si pulsa en una columna nueva, cambia la columna de control y fuerza descendente por defecto
+                sortColumn = column;
+                sortDirection = 'desc';
+            }
+            
+            // Actualizar flechas e indicadores en el HTML de forma reactiva
+            const indicatorPresupuesto = document.getElementById('sort-presupuesto');
+            const indicatorPedidos = document.getElementById('sort-pedidos');
+            
+            if (sortColumn === 'presupuesto') {
+                indicatorPresupuesto.textContent = (sortDirection === 'desc') ? '▼' : '▲';
+                indicatorPresupuesto.className = 'ml-1 text-gray-950 font-black';
+                indicatorPedidos.textContent = '▼';
+                indicatorPedidos.className = 'ml-1 text-gray-300';
+            } else {
+                indicatorPedidos.textContent = (sortDirection === 'desc') ? '▼' : '▲';
+                indicatorPedidos.className = 'ml-1 text-gray-950 font-black';
+                indicatorPresupuesto.textContent = '▼';
+                indicatorPresupuesto.className = 'ml-1 text-gray-300';
+            }
+            
             applyFilters();
         }
 
-        // Procesa la matriz de filtros cruzados y refresca el render de la tabla
         function applyFilters() {
             const searchCliente = document.getElementById('filter-cliente').value.toLowerCase().trim();
             const selectedArea = document.getElementById('filter-area').value;
 
-            // 1. Filtrar
+            // 1. Filtrado Cruzado
             let filteredData = globalRawData.filter(item => {
                 const matchesCliente = item.cliente.toLowerCase().includes(searchCliente);
                 const matchesArea = !selectedArea || item.area === selectedArea;
                 return matchesCliente && matchesArea;
             });
 
-            // 2. Ordenar dinámicamente por presupuesto
+            // 2. Ordenación Dinámica según columna seleccionada
             filteredData.sort((a, b) => {
-                const presA = Number(a.presupuesto) || 0;
-                const presB = Number(b.presupuesto) || 0;
-                return (sortDirection === 'desc') ? (presB - presA) : (presA - presB);
+                const valA = Number(a[sortColumn]) || 0;
+                const valB = Number(b[sortColumn]) || 0;
+                return (sortDirection === 'desc') ? (valB - valA) : (valA - valB);
             });
 
-            // Actualizar indicador de registros visualizados
             document.getElementById('filtered-count').textContent = filteredData.length;
-
-            // 3. Pintar en pantalla
             renderTable(filteredData);
         }
 
@@ -336,15 +358,15 @@
             chartInstances[id] = new Chart(ctx, { type: type, data: data, options: options });
         }
 
-        function renderTable(sortedAndFilteredData) {
+        function renderTable(tableData) {
             const tbody = document.getElementById('table-body');
             
-            if (sortedAndFilteredData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-sm font-semibold text-gray-400">No se encontraron clientes con los filtros seleccionados.</td></tr>`;
+            if (tableData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-sm font-semibold text-gray-400">No se encontraron registros con los filtros activos.</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = sortedAndFilteredData.map(item => {
+            tbody.innerHTML = tableData.map(item => {
                 let p = Number(item.presupuesto) || 0;
                 let ped = Number(item.pedidos) || 0;
                 let rawC = Number(item.cumplimiento) || 0;
