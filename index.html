@@ -155,8 +155,11 @@
                 const presupuesto = Number(item.presupuesto) || 0;
                 const exitoObjetivo = Number(item.cumplimiento) || 0;
                 
-                // Cálculo del importe real de pedidos en base al porcentaje completado
-                const pedidosImporte = presupuesto * (exitoObjetivo / 100);
+                // Extrae el dato real de pedidos (Columna L). Si contiene errores como #N/A, lo fuerza a 0.
+                let pedidosImporte = 0;
+                if (item.pedidos && !String(item.pedidos).includes('#')) {
+                    pedidosImporte = Number(item.pedidos) || 0;
+                }
 
                 totalEurosGlobal += presupuesto;
 
@@ -176,18 +179,17 @@
                 exitoMedio: groupedAreas[areaName].sumExito / groupedAreas[areaName].count
             }));
 
-            // Ordenamos la gráfica comparativa y el KPI por volumen de Pedidos Reales, no por presupuesto inicial
+            // El orden y la selección del Área Top ahora se rigen estrictamente por la columna L (pedidos)
             const areasByPedidos = [...areasArray].sort((a, b) => b.pedidos - a.pedidos);
             const areasBySuccess = [...areasArray].sort((a, b) => b.exitoMedio - a.exitoMedio);
 
-            // Asignación de KPIs corregida
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
             const avgGlobal = data.reduce((a, b) => a + (b.cumplimiento || 0), 0) / (data.length || 1);
             document.getElementById('kpi-avg').innerText = avgGlobal.toFixed(1) + '%';
 
-            // Renderizado de Gráfica de Barras Doble (Presupuesto vs Pedidos Cumplidos)
+            // Renderizado de Gráfica de Barras Doble (Presupuesto negro vs Pedidos naranja)
             drawChart('chart-bar-areas', 'bar', {
                 labels: areasByPedidos.map(a => a.name),
                 datasets: [
@@ -200,7 +202,7 @@
                     { 
                         label: 'Pedidos Cumplidos (€)', 
                         data: areasByPedidos.map(a => a.pedidos), 
-                        backgroundColor: '#f97316', // Naranja moderno Tailwind
+                        backgroundColor: '#f97316', 
                         borderRadius: 4 
                     }
                 ]
