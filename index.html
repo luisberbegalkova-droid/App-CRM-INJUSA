@@ -20,7 +20,6 @@
 </head>
 <body class="bg-[#f3f4f6] h-screen flex overflow-hidden text-gray-900">
 
-    <!-- SIDEBAR -->
     <aside class="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm z-20 shrink-0">
         <div class="p-6 flex items-center gap-3">
             <div class="w-10 h-10 bg-black text-white rounded-lg flex items-center justify-center font-black text-xl">I</div>
@@ -36,7 +35,6 @@
         </nav>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col h-screen overflow-y-auto relative">
         <header class="bg-white p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 z-10 shrink-0">
             <h2 id="page-title" class="text-2xl font-black tracking-tight">Dashboard Visual</h2>
@@ -47,16 +45,14 @@
 
         <div class="p-6 flex-1 flex flex-col gap-6">
             
-            <!-- VIEW: DASHBOARD VISUAL -->
             <div id="view-dashboard" class="flex flex-col gap-6">
-                <!-- KPIs -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
                     <div class="bg-white p-6 rounded-2xl border shadow-sm">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Presupuesto Global</p>
                         <h3 id="kpi-total" class="text-3xl font-black">0 €</h3>
                     </div>
                     <div class="bg-white p-6 rounded-2xl border shadow-sm border-l-4 border-l-blue-600">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Área Top (Importe)</p>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Área Top (Pedidos)</p>
                         <h3 id="kpi-top-area" class="text-2xl font-black text-blue-600">-</h3>
                     </div>
                     <div class="bg-white p-6 rounded-2xl border shadow-sm">
@@ -65,10 +61,9 @@
                     </div>
                 </div>
 
-                <!-- Gráficas Superiores -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-white p-6 rounded-2xl border shadow-sm flex flex-col">
-                        <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">Ranking Áreas por Importe (€)</h4>
+                        <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">Ranking Áreas por Importe (€) y Pedidos</h4>
                         <div class="chart-box-md"><canvas id="chart-bar-areas"></canvas></div>
                     </div>
                     
@@ -78,14 +73,12 @@
                     </div>
                 </div>
 
-                <!-- Gráfica Inferior -->
                 <div class="bg-white p-6 rounded-2xl border shadow-sm flex flex-col">
                     <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">% Éxito Objetivo por Área Comercial (Cumplimiento)</h4>
                     <div class="chart-box-md"><canvas id="chart-bar-exito"></canvas></div>
                 </div>
             </div>
 
-            <!-- VIEW: RESUMEN CLIENTES -->
             <div id="view-clientes" class="hidden bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex-col h-full flex-1">
                 <div class="overflow-auto flex-1">
                     <table class="w-full text-left border-collapse">
@@ -99,8 +92,7 @@
                             </tr>
                         </thead>
                         <tbody id="table-body" class="divide-y divide-gray-100">
-                            <!-- JS inyecta filas aquí -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -108,7 +100,6 @@
         </div>
     </main>
 
-    <!-- Pantalla de carga -->
     <div id="loader" class="fixed inset-0 bg-white/90 flex flex-col items-center justify-center z-50 hidden backdrop-blur-sm">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-black mb-4"></div>
         <p class="font-bold tracking-widest text-sm uppercase text-gray-500">Sincronizando Base de Datos...</p>
@@ -134,7 +125,6 @@
         const formatEur = (num) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(num);
 
         function getSuccessColor(value) {
-            // El color avanza de rojo a verde según el porcentaje de éxito objetivo (completado)
             const clampedValue = Math.min(Math.max(value, 0), 100);
             const hue = ((clampedValue / 100) * 120).toString(10);
             return `hsl(${hue}, 70%, 45%)`;
@@ -163,15 +153,18 @@
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
                 const presupuesto = Number(item.presupuesto) || 0;
-                // 'item.cumplimiento' mapea ahora directamente al % de éxito objetivo de tu hoja
                 const exitoObjetivo = Number(item.cumplimiento) || 0;
+                
+                // Cálculo del importe real de pedidos en base al porcentaje completado
+                const pedidosImporte = presupuesto * (exitoObjetivo / 100);
 
                 totalEurosGlobal += presupuesto;
 
                 if (!groupedAreas[area]) {
-                    groupedAreas[area] = { sumPresupuesto: 0, sumExito: 0, count: 0 };
+                    groupedAreas[area] = { sumPresupuesto: 0, sumPedidos: 0, sumExito: 0, count: 0 };
                 }
                 groupedAreas[area].sumPresupuesto += presupuesto;
+                groupedAreas[area].sumPedidos += pedidosImporte;
                 groupedAreas[area].sumExito += exitoObjetivo;
                 groupedAreas[area].count += 1;
             });
@@ -179,28 +172,44 @@
             const areasArray = Object.keys(groupedAreas).map(areaName => ({
                 name: areaName,
                 presupuesto: groupedAreas[areaName].sumPresupuesto,
+                pedidos: groupedAreas[areaName].sumPedidos,
                 exitoMedio: groupedAreas[areaName].sumExito / groupedAreas[areaName].count
             }));
 
-            const areasByPres = [...areasArray].sort((a, b) => b.presupuesto - a.presupuesto);
+            // Ordenamos la gráfica comparativa y el KPI por volumen de Pedidos Reales, no por presupuesto inicial
+            const areasByPedidos = [...areasArray].sort((a, b) => b.pedidos - a.pedidos);
             const areasBySuccess = [...areasArray].sort((a, b) => b.exitoMedio - a.exitoMedio);
 
+            // Asignación de KPIs corregida
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
-            document.getElementById('kpi-top-area').innerText = areasByPres.length > 0 ? areasByPres[0].name : '-';
+            document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
-            // Cálculo del promedio global basado en el Éxito Objetivo (% de completado)
             const avgGlobal = data.reduce((a, b) => a + (b.cumplimiento || 0), 0) / (data.length || 1);
             document.getElementById('kpi-avg').innerText = avgGlobal.toFixed(1) + '%';
 
+            // Renderizado de Gráfica de Barras Doble (Presupuesto vs Pedidos Cumplidos)
             drawChart('chart-bar-areas', 'bar', {
-                labels: areasByPres.map(a => a.name),
-                datasets: [{ label: 'Importe Total (€)', data: areasByPres.map(a => a.presupuesto), backgroundColor: '#000000', borderRadius: 6 }]
-            }, false);
+                labels: areasByPedidos.map(a => a.name),
+                datasets: [
+                    { 
+                        label: 'Presupuesto (€)', 
+                        data: areasByPedidos.map(a => a.presupuesto), 
+                        backgroundColor: '#000000', 
+                        borderRadius: 4 
+                    },
+                    { 
+                        label: 'Pedidos Cumplidos (€)', 
+                        data: areasByPedidos.map(a => a.pedidos), 
+                        backgroundColor: '#f97316', // Naranja moderno Tailwind
+                        borderRadius: 4 
+                    }
+                ]
+            }, false, true);
 
             drawChart('chart-bar-exito', 'bar', {
                 labels: areasBySuccess.map(a => a.name),
                 datasets: [{ label: '% Éxito Objetivo', data: areasBySuccess.map(a => a.exitoMedio), backgroundColor: areasBySuccess.map(a => getSuccessColor(a.exitoMedio)), borderRadius: 6 }]
-            }, false);
+            }, false, false);
             
             const top15 = [...data].sort((a, b) => (Number(b.presupuesto) || 0) - (Number(a.presupuesto) || 0)).slice(0, 15);
             const pieColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#45EDC0', '#F7464A', '#46BFBD', '#FDB45C', '#949FB1', '#4D5360', '#AC64AD', '#5175AE', '#E2EAE9'];
@@ -208,10 +217,10 @@
             drawChart('chart-pie-clientes', 'doughnut', {
                 labels: top15.map(c => c.cliente),
                 datasets: [{ data: top15.map(c => c.presupuesto), backgroundColor: pieColors, borderWidth: 2, borderColor: '#fff' }]
-            }, true);
+            }, true, false);
         }
 
-        function drawChart(id, type, data, isPie) {
+        function drawChart(id, type, data, isPie, showLegend = false) {
             if (chartInstances[id]) chartInstances[id].destroy();
             const ctx = document.getElementById(id).getContext('2d');
             
@@ -219,7 +228,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { 
-                    legend: { display: false },
+                    legend: { display: showLegend, position: 'top', labels: { boxWidth: 12, font: { size: 10, weight: 'bold' } } },
                     datalabels: { display: false }
                 },
                 scales: type === 'bar' ? { y: { beginAtZero: true }, x: { grid: { display: false } } } : {}
