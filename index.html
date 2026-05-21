@@ -84,19 +84,38 @@
             </div>
 
             <div id="view-clientes" class="hidden bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex-col h-full flex-1">
+                
+                <div class="p-4 bg-gray-50 border-b border-gray-200 flex flex-col md:flex-row gap-4 items-center justify-between shrink-0">
+                    <div class="flex flex-1 w-full md:w-auto gap-4 flex-col sm:flex-row">
+                        <div class="relative flex-1 sm:max-w-xs">
+                            <input type="text" id="filter-cliente" oninput="applyFilters()" placeholder="Buscar cliente..." class="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent" />
+                        </div>
+                        <div class="flex-1 sm:max-w-xs">
+                            <select id="filter-area" onchange="applyFilters()" class="w-full px-3 py-2 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent bg-white">
+                                <option value="">Todas las Áreas</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="text-xs font-semibold text-gray-400 uppercase">
+                        Mostrando: <span id="filtered-count" class="text-black font-bold">0</span> registros
+                    </div>
+                </div>
+
                 <div class="overflow-auto flex-1">
                     <table class="w-full text-left border-collapse">
-                        <thead class="bg-gray-50 sticky top-0 z-10 shadow-sm">
+                        <thead class="bg-gray-100 sticky top-0 z-10 shadow-sm">
                             <tr>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Cliente</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Área Comercial</th>
-                                <th class="p-4 text-xs font-bold uppercase text-gray-500 text-right whitespace-nowrap">Presupuesto</th>
+                                <th onclick="toggleSortPresupuesto()" class="p-4 text-xs font-bold uppercase text-gray-600 text-right whitespace-nowrap cursor-pointer hover:bg-gray-200 transition-colors select-none">
+                                    Presupuesto <span id="sort-indicator" class="ml-1 text-gray-900">▼</span>
+                                </th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 text-right whitespace-nowrap">Pedidos</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap text-center">Estado</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 w-64 whitespace-nowrap">Éxito Objetivo (% Completado)</th>
                             </tr>
                         </thead>
-                        <tbody id="table-body" class="divide-y divide-gray-100">
+                        <tbody id="table-body" class="divide-y divide-gray-100 bg-white">
                             </tbody>
                     </table>
                 </div>
@@ -113,6 +132,8 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbxCXZbP6BpR_GcRlEaScTgUJdhqqmEegZIQNeFcFp4QXjP-tQfX6gT0rRqzo7H9_xto/exec';
         let chartInstances = {};
+        let globalRawData = []; // Caché de datos para filtros veloces
+        let sortDirection = 'desc'; // Dirección inicial por defecto ('desc' o 'asc')
         
         Chart.register(ChartDataLabels);
 
@@ -140,10 +161,13 @@
             try {
                 const response = await fetch(API_URL, { redirect: "follow" });
                 const data = await response.json();
-                const validData = data.filter(item => item.cliente && item.cliente.trim() !== "");
                 
-                processDashboard(validData);
-                renderTable(validData);
+                // Guardamos los datos limpios en memoria global
+                globalRawData = data.filter(item => item.cliente && item.cliente.trim() !== "");
+                
+                populateAreaSelector(globalRawData);
+                processDashboard(globalRawData);
+                applyFilters(); // Renderiza la tabla aplicando orden y filtros activos
             } catch (error) {
                 console.error(error);
                 alert("Error de conexión con Google Sheets.");
@@ -151,9 +175,58 @@
             document.getElementById('loader').classList.add('hidden');
         }
 
+        // Genera el listado único de Áreas en el desplegable de filtros
+        function populateAreaSelector(data) {
+            const selectArea = document.getElementById('filter-area');
+            // Resetear manteniendo la opción inicial
+            selectArea.innerHTML = '<option value="">Todas las Áreas</option>';
+            
+            const uniqueAreas = [...new Set(data.map(item => item.area).filter(Boolean))].sort();
+            uniqueAreas.forEach(area => {
+                const opt = document.createElement('option');
+                opt.value = area;
+                opt.textContent = area;
+                selectArea.appendChild(opt);
+            });
+        }
+
+        // Alterna el sentido de la ordenación al clicar en la columna
+        function toggleSortPresupuesto() {
+            sortDirection = (sortDirection === 'desc') ? 'asc' : 'desc';
+            document.getElementById('sort-indicator').textContent = (sortDirection === 'desc') ? '▼' : '▲';
+            applyFilters();
+        }
+
+        // Procesa la matriz de filtros cruzados y refresca el render de la tabla
+        function applyFilters() {
+            const searchCliente = document.getElementById('filter-cliente').value.toLowerCase().trim();
+            const selectedArea = document.getElementById('filter-area').value;
+
+            // 1. Filtrar
+            let filteredData = globalRawData.filter(item => {
+                const matchesCliente = item.cliente.toLowerCase().includes(searchCliente);
+                const matchesArea = !selectedArea || item.area === selectedArea;
+                return matchesCliente && matchesArea;
+            });
+
+            // 2. Ordenar dinámicamente por presupuesto
+            filteredData.sort((a, b) => {
+                const presA = Number(a.presupuesto) || 0;
+                const presB = Number(b.presupuesto) || 0;
+                return (sortDirection === 'desc') ? (presB - presA) : (presA - presB);
+            });
+
+            // Actualizar indicador de registros visualizados
+            document.getElementById('filtered-count').textContent = filteredData.length;
+
+            // 3. Pintar en pantalla
+            renderTable(filteredData);
+        }
+
         function processDashboard(data) {
             const groupedAreas = {};
             let totalEurosGlobal = 0;
+            let totalPedidosGlobal = 0;
 
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
@@ -161,6 +234,7 @@
                 const pedidosImporte = Number(item.pedidos) || 0;
 
                 totalEurosGlobal += presupuesto;
+                totalPedidosGlobal += pedidosImporte;
 
                 if (!groupedAreas[area]) {
                     groupedAreas[area] = { sumPresupuesto: 0, sumPedidos: 0 };
@@ -198,7 +272,7 @@
             const avgGlobalDePromedios = areasArray.length > 0 ? (sumaPromediosAreas / areasArray.length) : 0;
             document.getElementById('kpi-avg').innerText = avgGlobalDePromedios.toFixed(1) + '%';
 
-            // Gráfica 1: Barras Comparativas (€)
+            // Gráfica 1
             drawChart('chart-bar-areas', 'bar', {
                 labels: areasByPedidos.map(a => a.name),
                 datasets: [
@@ -207,7 +281,7 @@
                 ]
             }, true, false);
 
-            // Gráfica 2: % Éxito Objetivo por Área Comercial
+            // Gráfica 2
             drawChart('chart-bar-exito', 'bar', {
                 labels: areasBySuccess.map(a => a.name),
                 datasets: [{ 
@@ -218,7 +292,7 @@
                 }]
             }, false, false);
             
-            // Rosco del Top 15 Clientes
+            // Rosco
             const top15 = [...data].sort((a, b) => b.pedidos - a.pedidos).slice(0, 15);
             const pieColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#45EDC0', '#F7464A', '#46BFBD', '#FDB45C', '#949FB1', '#4D5360', '#AC64AD', '#5175AE', '#E2EAE9'];
             
@@ -262,13 +336,17 @@
             chartInstances[id] = new Chart(ctx, { type: type, data: data, options: options });
         }
 
-        function renderTable(data) {
+        function renderTable(sortedAndFilteredData) {
             const tbody = document.getElementById('table-body');
-            const sortedData = [...data].sort((a, b) => b.presupuesto - a.presupuesto);
+            
+            if (sortedAndFilteredData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-sm font-semibold text-gray-400">No se encontraron clientes con los filtros seleccionados.</td></tr>`;
+                return;
+            }
 
-            tbody.innerHTML = sortedData.map(item => {
+            tbody.innerHTML = sortedAndFilteredData.map(item => {
                 let p = Number(item.presupuesto) || 0;
-                let ped = Number(item.pedidos) || 0; // Capturamos el dato de pedidos
+                let ped = Number(item.pedidos) || 0;
                 let rawC = Number(item.cumplimiento) || 0;
                 let c = rawC > 100 ? 100 : rawC; 
                 
