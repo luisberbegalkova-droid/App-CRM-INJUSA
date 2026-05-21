@@ -136,14 +136,8 @@
                 const response = await fetch(API_URL, { redirect: "follow" });
                 const data = await response.json();
                 
-                // CORRECCIÓN AQUÍ: Filtramos para que solo entren clientes con nombre real Y que tengan un valor de cumplimiento real asignado (ignorando celdas vacías como hace Excel)
-                const validData = data.filter(item => {
-                    return item.cliente && 
-                           item.cliente.trim() !== "" && 
-                           item.cumplimiento !== undefined && 
-                           item.cumplimiento !== null && 
-                           item.cumplimiento !== "";
-                });
+                // Filtro inicial estricto de clientes válidos
+                const validData = data.filter(item => item.cliente && item.cliente.trim() !== "");
                 
                 processDashboard(validData);
                 renderTable(validData);
@@ -157,67 +151,69 @@
         function processDashboard(data) {
             const groupedAreas = {};
             let totalEurosGlobal = 0;
+            
+            // Para calcular el promedio global exacto sin las celdas vacías (tratamiento idéntico al de Excel)
+            let totalExitoSuma = 0;
+            let totalClientesConDato = 0;
 
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
                 const presupuesto = Number(item.presupuesto) || 0;
-                
-                let rawExito = Number(item.cumplimiento) || 0;
-                const exitoObjetivo = rawExito > 100 ? 100 : rawExito;
-                
+                totalEurosGlobal += presupuesto;
+
+                // Verificamos si la celda de cumplimiento tiene un dato real numérico
+                const tieneDatoCumplimiento = item.cumplimiento !== undefined && item.cumplimiento !== null && item.cumplimiento !== "";
+
+                if (tieneDatoCumplimiento) {
+                    let rawExito = Number(item.cumplimiento) || 0;
+                    const exitoObjetivo = rawExito > 100 ? 100 : rawExito;
+
+                    totalExitoSuma += exitoObjetivo;
+                    totalClientesConDato += 1;
+
+                    // Agrupación por áreas respetando solo clientes con datos reales
+                    if (!groupedAreas[area]) {
+                        groupedAreas[area] = { sumPresupuesto: 0, sumPedidos: 0, sumExito: 0, count: 0 };
+                    }
+                    groupedAreas[area].sumExito += exitoObjetivo;
+                    groupedAreas[area].count += 1;
+                }
+
+                // Los fletes y presupuestos de las barras dobles se agrupan siempre por cliente válido
                 let pedidosImporte = 0;
                 if (item.pedidos && !String(item.pedidos).includes('#')) {
                     pedidosImporte = Number(item.pedidos) || 0;
                 }
-
-                totalEurosGlobal += presupuesto;
-
                 if (!groupedAreas[area]) {
                     groupedAreas[area] = { sumPresupuesto: 0, sumPedidos: 0, sumExito: 0, count: 0 };
                 }
                 groupedAreas[area].sumPresupuesto += presupuesto;
                 groupedAreas[area].sumPedidos += pedidosImporte;
-                groupedAreas[area].sumExito += exitoObjetivo;
-                groupedAreas[area].count += 1;
             });
 
             const areasArray = Object.keys(groupedAreas).map(areaName => ({
                 name: areaName,
                 presupuesto: groupedAreas[areaName].sumPresupuesto,
                 pedidos: groupedAreas[areaName].sumPedidos,
-                exitoMedio: groupedAreas[areaName].sumExito / groupedAreas[areaName].count
+                exitoMedio: groupedAreas[areaName].count > 0 ? (groupedAreas[areaName].sumExito / groupedAreas[areaName].count) : 0
             }));
 
             const areasByPedidos = [...areasArray].sort((a, b) => b.pedidos - a.pedidos);
-            const areasBySuccess = [...areasArray].sort((a, b) => b.exitoMedio - a.exitoMedio);
+            const areasBySuccess = [...areasArray].filter(a => a.exitoMedio > 0).sort((a, b) => b.exitoMedio - a.exitoMedio);
 
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
-            // Cálculo del promedio global idéntico a las filas válidas filtradas
-            const totalExitoLimitado = data.reduce((acc, item) => {
-                let val = Number(item.cumplimiento) || 0;
-                return acc + (val > 100 ? 100 : val);
-            }, 0);
-            const avgGlobal = totalExitoLimitado / (data.length || 1);
+            // CORRECCIÓN DEFINITIVA DEL KPI: Suma de éxitos / total de celdas que no están vacías
+            const avgGlobal = totalClientesConDato > 0 ? (totalExitoSuma / totalClientesConDato) : 0;
             document.getElementById('kpi-avg').innerText = avgGlobal.toFixed(1) + '%';
 
-            // Renderizado de Gráfica de Barras Doble
+            // Renderizado de Gráficas
             drawChart('chart-bar-areas', 'bar', {
                 labels: areasByPedidos.map(a => a.name),
                 datasets: [
-                    { 
-                        label: 'Presupuesto (€)', 
-                        data: areasByPedidos.map(a => a.presupuesto), 
-                        backgroundColor: '#000000', 
-                        borderRadius: 4 
-                    },
-                    { 
-                        label: 'Pedidos Cumplidos (€)', 
-                        data: areasByPedidos.map(a => a.pedidos), 
-                        backgroundColor: '#f97316', 
-                        borderRadius: 4 
-                    }
+                    { label: 'Presupuesto (€)', data: areasByPedidos.map(a => a.presupuesto), backgroundColor: '#000000', borderRadius: 4 },
+                    { label: 'Pedidos Cumplidos (€)', data: areasByPedidos.map(a => a.pedidos), backgroundColor: '#f97316', borderRadius: 4 }
                 ]
             }, false, true);
 
@@ -236,12 +232,7 @@
             
             drawChart('chart-pie-clientes', 'doughnut', {
                 labels: top15.map(c => c.cliente),
-                datasets: [{ 
-                    data: top15.map(c => (c.pedidos && !String(c.pedidos).includes('#')) ? Number(c.pedidos) : 0), 
-                    backgroundColor: pieColors, 
-                    borderWidth: 2, 
-                    borderColor: '#fff' 
-                }]
+                datasets: [{ data: top15.map(c => (c.pedidos && !String(c.pedidos).includes('#')) ? Number(c.pedidos) : 0), backgroundColor: pieColors, borderWidth: 2, borderColor: '#fff' }]
             }, true, false);
         }
 
@@ -290,12 +281,15 @@
 
             tbody.innerHTML = sortedData.map(item => {
                 let p = Number(item.presupuesto) || 0;
-                let rawC = Number(item.cumplimiento) || 0;
                 
+                // Mismo tratamiento visual en la tabla
+                const tieneDato = item.cumplimiento !== undefined && item.cumplimiento !== null && item.cumplimiento !== "";
+                let rawC = tieneDato ? Number(item.cumplimiento) || 0 : 0;
                 let c = rawC > 100 ? 100 : rawC; 
                 
                 let barColor = 'bg-blue-600';
-                if (c < 50) barColor = 'bg-red-500';
+                if (!tieneDato || c === 0) barColor = 'bg-gray-200';
+                else if (c < 50) barColor = 'bg-red-500';
                 else if (c >= 100) barColor = 'bg-green-500';
                 else if (c >= 50 && c < 80) barColor = 'bg-gray-700';
 
