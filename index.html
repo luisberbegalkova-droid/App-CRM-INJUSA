@@ -135,7 +135,15 @@
             try {
                 const response = await fetch(API_URL, { redirect: "follow" });
                 const data = await response.json();
-                const validData = data.filter(item => item.cliente && item.cliente.trim() !== "");
+                
+                // CORRECCIÓN AQUÍ: Filtramos para que solo entren clientes con nombre real Y que tengan un valor de cumplimiento real asignado (ignorando celdas vacías como hace Excel)
+                const validData = data.filter(item => {
+                    return item.cliente && 
+                           item.cliente.trim() !== "" && 
+                           item.cumplimiento !== undefined && 
+                           item.cumplimiento !== null && 
+                           item.cumplimiento !== "";
+                });
                 
                 processDashboard(validData);
                 renderTable(validData);
@@ -186,6 +194,7 @@
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
+            // Cálculo del promedio global idéntico a las filas válidas filtradas
             const totalExitoLimitado = data.reduce((acc, item) => {
                 let val = Number(item.cumplimiento) || 0;
                 return acc + (val > 100 ? 100 : val);
