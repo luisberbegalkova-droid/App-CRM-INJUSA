@@ -6,7 +6,6 @@
     <title>INJUSA CRM - Analytics Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <style>
@@ -108,8 +107,6 @@
     <script>
         const API_URL = 'https://script.google.com/macros/s/AKfycbxCXZbP6BpR_GcRlEaScTgUJdhqqmEegZIQNeFcFp4QXjP-tQfX6gT0rRqzo7H9_xto/exec';
         let chartInstances = {};
-        
-        Chart.register(ChartDataLabels);
 
         function switchTab(tab) {
             const isDash = tab === 'dashboard';
@@ -125,9 +122,9 @@
         const formatEur = (num) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(num);
 
         function getSuccessColor(value) {
-            const clampedValue = Math.min(Math.max(value, 0), 100);
-            const hue = ((clampedValue / 100) * 120).toString(10);
-            return `hsl(${hue}, 70%, 45%)`;
+            if (value < 30) return '#ef4444';
+            if (value < 70) return '#eab308';
+            return '#22c55e';
         }
 
         async function fetchCRMData() {
@@ -136,7 +133,6 @@
                 const response = await fetch(API_URL, { redirect: "follow" });
                 const data = await response.json();
                 
-                // Procesamos cada bloque por separado de forma segura
                 processDashboard(data.totalesAreas || [], data.clientes || []);
                 renderTable(data.clientes || []);
             } catch (error) {
@@ -155,70 +151,59 @@
                 totalPedidosGlobal += area.pedidos;
             });
 
-            // Ordenaciones del bloque agrupado
             const areasByPedidos = [...totalesAreas].sort((a, b) => b.pedidos - a.pedidos);
             const areasBySuccess = [...totalesAreas].sort((a, b) => b.exitoMedio - a.exitoMedio);
 
             document.getElementById('kpi-total').innerText = formatEur(totalPresupuestoGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
-            // KPI Global Ponderado Dinámico Total General
             const avgGlobal = totalPresupuestoGlobal > 0 ? (totalPedidosGlobal / totalPresupuestoGlobal) * 100 : 0;
             document.getElementById('kpi-avg').innerText = (avgGlobal > 100 ? 100 : avgGlobal).toFixed(1) + '%';
 
-            // Renderizado de Gráfica de Barras Doble
+            // Gráfica 1: Comparativa Importes y Pedidos
             drawChart('chart-bar-areas', 'bar', {
-                labels: areasByPedidos.map(a => a.name),
+                labels: areasByPedidos.map(a => a.area),
                 datasets: [
                     { label: 'Presupuesto (€)', data: areasByPedidos.map(a => a.presupuesto), backgroundColor: '#000000', borderRadius: 4 },
                     { label: 'Pedidos Cumplidos (€)', data: areasByPedidos.map(a => a.pedidos), backgroundColor: '#f97316', borderRadius: 4 }
                 ]
-            }, false, true);
+            }, true);
 
-            // Gráfica de Éxito Comercial calcada a la columna D de tu dinámica
+            // Gráfica 2: Éxito Ponderado
             drawChart('chart-bar-exito', 'bar', {
-                labels: areasBySuccess.map(a => a.name),
-                datasets: [{ label: '% Éxito Objetivo', data: areasBySuccess.map(a => a.exitoMedio), backgroundColor: areasBySuccess.map(a => getSuccessColor(a.exitoMedio)), borderRadius: 6 }]
-            }, false, false);
+                labels: areasBySuccess.map(a => a.area),
+                datasets: [{ 
+                    label: '% Éxito Objetivo', 
+                    data: areasBySuccess.map(a => a.exitoMedio), 
+                    backgroundColor: areasBySuccess.map(a => getSuccessColor(a.exitoMedio)), 
+                    borderRadius: 6 
+                }]
+            }, false);
             
-            // Top 15 Clientes ordenados por volumen real de Pedidos
+            // Gráfica 3: Rosco Top 15
             const top15 = [...clientesRaw].sort((a, b) => b.pedidos - a.pedidos).slice(0, 15);
             const pieColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#45EDC0', '#F7464A', '#46BFBD', '#FDB45C', '#949FB1', '#4D5360', '#AC64AD', '#5175AE', '#E2EAE9'];
             
             drawChart('chart-pie-clientes', 'doughnut', {
                 labels: top15.map(c => c.cliente),
                 datasets: [{ data: top15.map(c => c.pedidos), backgroundColor: pieColors, borderWidth: 2, borderColor: '#fff' }]
-            }, true, false);
+            }, false);
         }
 
-        function drawChart(id, type, data, isPie, showLegend = false) {
+        function drawChart(id, type, data, showLegend = false) {
             if (chartInstances[id]) chartInstances[id].destroy();
             const ctx = document.getElementById(id).getContext('2d');
             
-            const options = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { 
-                    legend: { display: showLegend, position: 'top', labels: { boxWidth: 12, font: { size: 10, weight: 'bold' } } },
-                    datalabels: { display: false }
-                },
-                scales: type === 'bar' ? { y: { beginAtZero: true }, x: { grid: { display: false } } } : {}
-            };
-
-            if(isPie) {
-                options.cutout = '55%';
-                options.plugins.datalabels = {
-                    display: true, color: '#4B5563', anchor: 'end', align: 'end', offset: 5,
-                    font: { size: 9, weight: 'bold' },
-                    formatter: (value, ctx) => {
-                        let label = ctx.chart.data.labels[ctx.dataIndex];
-                        return label.length > 15 ? label.substring(0,15) + '...' : label;
-                    }
-                };
-                options.layout = { padding: 40 };
-            }
-
-            chartInstances[id] = new Chart(ctx, { type: type, data: data, options: options });
+            chartInstances[id] = new Chart(ctx, { 
+                type: type, 
+                data: data, 
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: showLegend, position: 'top' } },
+                    scales: type === 'bar' ? { y: { beginAtZero: true }, x: { grid: { display: false } } } : {}
+                }
+            });
         }
 
         function renderTable(clientes) {
@@ -227,8 +212,8 @@
 
             tbody.innerHTML = sortedData.map(item => {
                 let p = Number(item.presupuesto) || 0;
-                let rawC = Number(item.cumplimiento) || 0;
-                let c = rawC > 100 ? 100 : rawC; 
+                let c = Number(item.cumplimiento) || 0;
+                if(c > 100) c = 100;
                 
                 let barColor = 'bg-blue-600';
                 if (c < 50) barColor = 'bg-red-500';
@@ -243,7 +228,7 @@
                 return `
                 <tr class="hover:bg-gray-50 transition-colors group">
                     <td class="p-4 text-sm font-bold text-gray-900">${item.cliente}</td>
-                    <td class="p-4 text-sm text-gray-500">${item.area || '-'}</td>
+                    <td class="p-4 text-sm text-gray-500">${item.area}</td>
                     <td class="p-4 text-sm font-semibold text-right">${formatEur(p)}</td>
                     <td class="p-4 text-center">
                         <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeClass}">${estado}</span>
