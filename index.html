@@ -56,7 +56,7 @@
                         <h3 id="kpi-top-area" class="text-2xl font-black text-blue-600">-</h3>
                     </div>
                     <div class="bg-white p-6 rounded-2xl border shadow-sm">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Éxito Objetivo Promedio</p>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Éxito Objetivo Promedio Global</p>
                         <h3 id="kpi-avg" class="text-3xl font-black">0%</h3>
                     </div>
                 </div>
@@ -74,7 +74,7 @@
                 </div>
 
                 <div class="bg-white p-6 rounded-2xl border shadow-sm flex flex-col">
-                    <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">% Éxito Objetivo por Área Comercial (Cumplimiento)</h4>
+                    <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">% Éxito Objetivo por Área Comercial (Fórmula Tabla Dinámica)</h4>
                     <div class="chart-box-md"><canvas id="chart-bar-exito"></canvas></div>
                 </div>
             </div>
@@ -135,10 +135,7 @@
             try {
                 const response = await fetch(API_URL, { redirect: "follow" });
                 const data = await response.json();
-                
-                // Filtro inicial estricto de clientes válidos
                 const validData = data.filter(item => item.cliente && item.cliente.trim() !== "");
-                
                 processDashboard(validData);
                 renderTable(validData);
             } catch (error) {
@@ -150,63 +147,51 @@
 
         function processDashboard(data) {
             const groupedAreas = {};
-            let totalEurosGlobal = 0;
-            
-            // Para calcular el promedio global exacto sin las celdas vacías (tratamiento idéntico al de Excel)
-            let totalExitoSuma = 0;
-            let totalClientesConDato = 0;
+            let totalPresupuestoGlobal = 0;
+            let totalPedidosGlobal = 0;
 
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
                 const presupuesto = Number(item.presupuesto) || 0;
-                totalEurosGlobal += presupuesto;
-
-                // Verificamos si la celda de cumplimiento tiene un dato real numérico
-                const tieneDatoCumplimiento = item.cumplimiento !== undefined && item.cumplimiento !== null && item.cumplimiento !== "";
-
-                if (tieneDatoCumplimiento) {
-                    let rawExito = Number(item.cumplimiento) || 0;
-                    const exitoObjetivo = rawExito > 100 ? 100 : rawExito;
-
-                    totalExitoSuma += exitoObjetivo;
-                    totalClientesConDato += 1;
-
-                    // Agrupación por áreas respetando solo clientes con datos reales
-                    if (!groupedAreas[area]) {
-                        groupedAreas[area] = { sumPresupuesto: 0, sumPedidos: 0, sumExito: 0, count: 0 };
-                    }
-                    groupedAreas[area].sumExito += exitoObjetivo;
-                    groupedAreas[area].count += 1;
-                }
-
-                // Los fletes y presupuestos de las barras dobles se agrupan siempre por cliente válido
+                
                 let pedidosImporte = 0;
                 if (item.pedidos && !String(item.pedidos).includes('#')) {
                     pedidosImporte = Number(item.pedidos) || 0;
                 }
+
+                totalPresupuestoGlobal += presupuesto;
+                totalPedidosGlobal += pedidosImporte;
+
                 if (!groupedAreas[area]) {
-                    groupedAreas[area] = { sumPresupuesto: 0, sumPedidos: 0, sumExito: 0, count: 0 };
+                    groupedAreas[area] = { sumPresupuesto: 0, sumPedidos: 0 };
                 }
                 groupedAreas[area].sumPresupuesto += presupuesto;
                 groupedAreas[area].sumPedidos += pedidosImporte;
             });
 
-            const areasArray = Object.keys(groupedAreas).map(areaName => ({
-                name: areaName,
-                presupuesto: groupedAreas[areaName].sumPresupuesto,
-                pedidos: groupedAreas[areaName].sumPedidos,
-                exitoMedio: groupedAreas[areaName].count > 0 ? (groupedAreas[areaName].sumExito / groupedAreas[areaName].count) : 0
-            }));
+            // LÓGICA DE TABLA DINÁMICA: % Éxito = Total Pedidos Área / Total Presupuesto Área
+            const areasArray = Object.keys(groupedAreas).map(areaName => {
+                const p = groupedAreas[areaName].sumPresupuesto;
+                const ped = groupedAreas[areaName].sumPedidos;
+                let exitoPonderado = p > 0 ? (ped / p) * 100 : 0;
+                
+                return {
+                    name: areaName,
+                    presupuesto: p,
+                    pedidos: ped,
+                    exitoMedio: exitoPonderado > 100 ? 100 : exitoPonderado
+                };
+            });
 
             const areasByPedidos = [...areasArray].sort((a, b) => b.pedidos - a.pedidos);
-            const areasBySuccess = [...areasArray].filter(a => a.exitoMedio > 0).sort((a, b) => b.exitoMedio - a.exitoMedio);
+            const areasBySuccess = [...areasArray].sort((a, b) => b.exitoMedio - a.exitoMedio);
 
-            document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
+            document.getElementById('kpi-total').innerText = formatEur(totalPresupuestoGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
-            // CORRECCIÓN DEFINITIVA DEL KPI: Suma de éxitos / total de celdas que no están vacías
-            const avgGlobal = totalClientesConDato > 0 ? (totalExitoSuma / totalClientesConDato) : 0;
-            document.getElementById('kpi-avg').innerText = avgGlobal.toFixed(1) + '%';
+            // KPI GLOBAL: Suma de Pedidos Global / Presupuesto Global (Igual al total general de la dinámica)
+            const avgGlobal = totalPresupuestoGlobal > 0 ? (totalPedidosGlobal / totalPresupuestoGlobal) * 100 : 0;
+            document.getElementById('kpi-avg').innerText = (avgGlobal > 100 ? 100 : avgGlobal).toFixed(1) + '%';
 
             // Renderizado de Gráficas
             drawChart('chart-bar-areas', 'bar', {
@@ -272,30 +257,21 @@
 
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
-            
-            const sortedData = [...data].sort((a, b) => {
-                const presA = Number(a.presupuesto) || 0;
-                const presB = Number(b.presupuesto) || 0;
-                return presB - presA;
-            });
+            const sortedData = [...data].sort((a, b) => (Number(b.presupuesto) || 0) - (Number(a.presupuesto) || 0));
 
             tbody.innerHTML = sortedData.map(item => {
                 let p = Number(item.presupuesto) || 0;
-                
-                // Mismo tratamiento visual en la tabla
-                const tieneDato = item.cumplimiento !== undefined && item.cumplimiento !== null && item.cumplimiento !== "";
-                let rawC = tieneDato ? Number(item.cumplimiento) || 0 : 0;
+                let rawC = Number(item.cumplimiento) || 0;
                 let c = rawC > 100 ? 100 : rawC; 
                 
                 let barColor = 'bg-blue-600';
-                if (!tieneDato || c === 0) barColor = 'bg-gray-200';
-                else if (c < 50) barColor = 'bg-red-500';
+                if (c < 50) barColor = 'bg-red-500';
                 else if (c >= 100) barColor = 'bg-green-500';
                 else if (c >= 50 && c < 80) barColor = 'bg-gray-700';
 
                 const estado = String(item.estado || 'Pendiente');
                 let badgeClass = 'bg-gray-100 text-gray-700';
-                if(estado.toLowerCase().includes('positivo') || estado.toLowerCase().includes('ganado') || estado.toLowerCase().includes('superado')) badgeClass = 'bg-green-100 text-green-800';
+                if(estado.toLowerCase().includes('positivo') || estado.toLowerCase().includes('ganado')) badgeClass = 'bg-green-100 text-green-800';
                 if(estado.toLowerCase().includes('negativo') || estado.toLowerCase().includes('perdido')) badgeClass = 'bg-red-100 text-red-800';
 
                 return `
