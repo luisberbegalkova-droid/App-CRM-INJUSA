@@ -150,10 +150,13 @@
             const groupedAreas = {};
             let totalEurosGlobal = 0;
 
+            // CAMBIO AQUÍ: Al procesar el promedio global y los gráficos por área, limitamos el cumplimiento de cada fila al 100%
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
                 const presupuesto = Number(item.presupuesto) || 0;
-                const exitoObjetivo = Number(item.cumplimiento) || 0;
+                
+                let rawExito = Number(item.cumplimiento) || 0;
+                const exitoObjetivo = rawExito > 100 ? 100 : rawExito; // Si pasa de 100, se queda en 100
                 
                 let pedidosImporte = 0;
                 if (item.pedidos && !String(item.pedidos).includes('#')) {
@@ -184,7 +187,12 @@
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
-            const avgGlobal = data.reduce((a, b) => a + (b.cumplimiento || 0), 0) / (data.length || 1);
+            // CAMBIO AQUÍ: El cálculo del KPI promedio también respetará el límite del 100% por cliente
+            const totalExitoLimitado = data.reduce((acc, item) => {
+                let val = Number(item.cumplimiento) || 0;
+                return acc + (val > 100 ? 100 : val);
+            }, 0);
+            const avgGlobal = totalExitoLimitado / (data.length || 1);
             document.getElementById('kpi-avg').innerText = avgGlobal.toFixed(1) + '%';
 
             // Renderizado de Gráfica de Barras Doble
@@ -211,7 +219,6 @@
                 datasets: [{ label: '% Éxito Objetivo', data: areasBySuccess.map(a => a.exitoMedio), backgroundColor: areasBySuccess.map(a => getSuccessColor(a.exitoMedio)), borderRadius: 6 }]
             }, false, false);
             
-            // CAMBIO AQUÍ: Filtrado y ordenación de los Top 15 clientes basado estrictamente en el volumen de PEDIDOS reales
             const top15 = [...data].sort((a, b) => {
                 let pedA = (a.pedidos && !String(a.pedidos).includes('#')) ? Number(a.pedidos) : 0;
                 let pedB = (b.pedidos && !String(b.pedidos).includes('#')) ? Number(b.pedidos) : 0;
@@ -220,7 +227,6 @@
 
             const pieColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#45EDC0', '#F7464A', '#46BFBD', '#FDB45C', '#949FB1', '#4D5360', '#AC64AD', '#5175AE', '#E2EAE9'];
             
-            // CAMBIO AQUÍ: Asignación de datos del dataset de la dona para mapear 'pedidos'
             drawChart('chart-pie-clientes', 'doughnut', {
                 labels: top15.map(c => c.cliente),
                 datasets: [{ 
@@ -277,7 +283,10 @@
 
             tbody.innerHTML = sortedData.map(item => {
                 let p = Number(item.presupuesto) || 0;
-                let c = Number(item.cumplimiento) || 0;
+                let rawC = Number(item.cumplimiento) || 0;
+                
+                // CAMBIO AQUÍ: Clavamos el valor en 100 si pasa del límite para la visualización de la tabla
+                let c = rawC > 100 ? 100 : rawC; 
                 
                 let barColor = 'bg-blue-600';
                 if (c < 50) barColor = 'bg-red-500';
@@ -300,7 +309,7 @@
                     <td class="p-4">
                         <div class="flex items-center gap-3">
                             <div class="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                                <div class="h-full ${barColor}" style="width: ${c > 100 ? 100 : c}%"></div>
+                                <div class="h-full ${barColor}" style="width: ${c}"></div>
                             </div>
                             <span class="text-xs font-black w-12 text-right">${c.toFixed(1)}%</span>
                         </div>
