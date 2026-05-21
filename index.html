@@ -109,6 +109,7 @@
         const API_URL = 'https://script.google.com/macros/s/AKfycbxCXZbP6BpR_GcRlEaScTgUJdhqqmEegZIQNeFcFp4QXjP-tQfX6gT0rRqzo7H9_xto/exec';
         let chartInstances = {};
         
+        // Mantenemos el registro por arquitectura, pero caparemos su visualización en las opciones de dibujo
         Chart.register(ChartDataLabels);
 
         function switchTab(tab) {
@@ -151,7 +152,6 @@
             let totalEurosGlobal = 0;
             let totalPedidosGlobal = 0;
 
-            // 1. Acumulamos el dinero real (Presupuesto y Pedidos) por cada Área Comercial
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
                 const presupuesto = Number(item.presupuesto) || 0;
@@ -167,7 +167,6 @@
                 groupedAreas[area].sumPedidos += pedidosImporte;
             });
 
-            // 2. MATEMÁTICA FINANCIERA REAL: % Éxito = Suma Pedidos / Suma Presupuesto
             const areasArray = Object.keys(groupedAreas).map(areaName => {
                 const pres = groupedAreas[areaName].sumPresupuesto;
                 const peds = groupedAreas[areaName].sumPedidos;
@@ -177,23 +176,20 @@
                     name: areaName,
                     presupuesto: pres,
                     pedidos: peds,
-                    exitoMedio: exitoReal > 100 ? 100 : exitoReal // Tope de seguridad del 100%
+                    exitoMedio: exitoReal > 100 ? 100 : exitoReal
                 };
             });
 
-            // Ordenaciones limpias basadas en las propiedades calculadas
             const areasByPedidos = [...areasArray].sort((a, b) => b.pedidos - a.pedidos);
             const areasBySuccess = [...areasArray].sort((a, b) => b.exitoMedio - a.exitoMedio);
 
-            // Asignación de KPIs principales
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
-            // KPI Global Ponderado: Total de pedidos conseguidos entre el presupuesto total de la empresa
             const avgGlobal = totalEurosGlobal > 0 ? (totalPedidosGlobal / totalEurosGlobal) * 100 : 0;
             document.getElementById('kpi-avg').innerText = (avgGlobal > 100 ? 100 : avgGlobal).toFixed(1) + '%';
 
-            // Renderizado de Gráfica 1: Barras Comparativas (€)
+            // Gráfica 1: Barras Comparativas (€)
             drawChart('chart-bar-areas', 'bar', {
                 labels: areasByPedidos.map(a => a.name),
                 datasets: [
@@ -202,7 +198,7 @@
                 ]
             }, true);
 
-            // Renderizado de Gráfica 2: El % de Éxito Objetivo Matemático Real por Área (Tu fórmula exacta)
+            // Gráfica 2: % Éxito Objetivo Matemático Real por Área
             drawChart('chart-bar-exito', 'bar', {
                 labels: areasBySuccess.map(a => a.name),
                 datasets: [{ 
@@ -213,7 +209,7 @@
                 }]
             }, false);
             
-            // Rosco del Top 15 Clientes ordenados por volumen de Pedidos
+            // Rosco del Top 15 Clientes
             const top15 = [...data].sort((a, b) => b.pedidos - a.pedidos).slice(0, 15);
             const pieColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#45EDC0', '#F7464A', '#46BFBD', '#FDB45C', '#949FB1', '#4D5360', '#AC64AD', '#5175AE', '#E2EAE9'];
             
@@ -233,7 +229,11 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: showLegend, position: 'top' } },
+                    plugins: { 
+                        legend: { display: showLegend, position: 'top' },
+                        // CAMBIO CLAVE AQUÍ: Capamos de raíz que el plugin pinte texto plano encima del lienzo
+                        datalabels: { display: false } 
+                    },
                     scales: type === 'bar' ? { y: { beginAtZero: true }, x: { grid: { display: false } } } : {}
                 }
             });
