@@ -60,7 +60,7 @@
                         <h3 id="kpi-top-area" class="text-2xl font-black text-blue-600">-</h3>
                     </div>
                     <div class="bg-white p-6 rounded-2xl border shadow-sm">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Éxito Promedio Total</p>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Éxito Objetivo Promedio</p>
                         <h3 id="kpi-avg" class="text-3xl font-black">0%</h3>
                     </div>
                 </div>
@@ -80,7 +80,7 @@
 
                 <!-- Gráfica Inferior -->
                 <div class="bg-white p-6 rounded-2xl border shadow-sm flex flex-col">
-                    <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">% Éxito por Área Comercial (Ordenado)</h4>
+                    <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">% Éxito Objetivo por Área Comercial (Cumplimiento)</h4>
                     <div class="chart-box-md"><canvas id="chart-bar-exito"></canvas></div>
                 </div>
             </div>
@@ -95,7 +95,7 @@
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Área Comercial</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 text-right whitespace-nowrap">Presupuesto</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap text-center">Estado</th>
-                                <th class="p-4 text-xs font-bold uppercase text-gray-500 w-64 whitespace-nowrap">Éxito Objetivo</th>
+                                <th class="p-4 text-xs font-bold uppercase text-gray-500 w-64 whitespace-nowrap">Éxito Objetivo (% Completado)</th>
                             </tr>
                         </thead>
                         <tbody id="table-body" class="divide-y divide-gray-100">
@@ -134,7 +134,9 @@
         const formatEur = (num) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(num);
 
         function getSuccessColor(value) {
-            const hue = ((value / 100) * 120).toString(10);
+            // El color avanza de rojo a verde según el porcentaje de éxito objetivo (completado)
+            const clampedValue = Math.min(Math.max(value, 0), 100);
+            const hue = ((clampedValue / 100) * 120).toString(10);
             return `hsl(${hue}, 70%, 45%)`;
         }
 
@@ -161,7 +163,8 @@
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
                 const presupuesto = Number(item.presupuesto) || 0;
-                const exito = Number(item.cumplimiento) || 0;
+                // 'item.cumplimiento' mapea ahora directamente al % de éxito objetivo de tu hoja
+                const exitoObjetivo = Number(item.cumplimiento) || 0;
 
                 totalEurosGlobal += presupuesto;
 
@@ -169,7 +172,7 @@
                     groupedAreas[area] = { sumPresupuesto: 0, sumExito: 0, count: 0 };
                 }
                 groupedAreas[area].sumPresupuesto += presupuesto;
-                groupedAreas[area].sumExito += exito;
+                groupedAreas[area].sumExito += exitoObjetivo;
                 groupedAreas[area].count += 1;
             });
 
@@ -184,6 +187,8 @@
 
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPres.length > 0 ? areasByPres[0].name : '-';
+            
+            // Cálculo del promedio global basado en el Éxito Objetivo (% de completado)
             const avgGlobal = data.reduce((a, b) => a + (b.cumplimiento || 0), 0) / (data.length || 1);
             document.getElementById('kpi-avg').innerText = avgGlobal.toFixed(1) + '%';
 
@@ -194,7 +199,7 @@
 
             drawChart('chart-bar-exito', 'bar', {
                 labels: areasBySuccess.map(a => a.name),
-                datasets: [{ label: '% Éxito', data: areasBySuccess.map(a => a.exitoMedio), backgroundColor: areasBySuccess.map(a => getSuccessColor(a.exitoMedio)), borderRadius: 6 }]
+                datasets: [{ label: '% Éxito Objetivo', data: areasBySuccess.map(a => a.exitoMedio), backgroundColor: areasBySuccess.map(a => getSuccessColor(a.exitoMedio)), borderRadius: 6 }]
             }, false);
             
             const top15 = [...data].sort((a, b) => (Number(b.presupuesto) || 0) - (Number(a.presupuesto) || 0)).slice(0, 15);
@@ -243,11 +248,10 @@
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
             
-            // ORDENAR DATOS: Mayor a menor presupuesto
             const sortedData = [...data].sort((a, b) => {
                 const presA = Number(a.presupuesto) || 0;
                 const presB = Number(b.presupuesto) || 0;
-                return presB - presA; // Orden descendente
+                return presB - presA;
             });
 
             tbody.innerHTML = sortedData.map(item => {
