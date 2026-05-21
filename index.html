@@ -155,7 +155,6 @@
                 const presupuesto = Number(item.presupuesto) || 0;
                 const exitoObjetivo = Number(item.cumplimiento) || 0;
                 
-                // Extrae el dato real de pedidos (Columna L). Si contiene errores como #N/A, lo fuerza a 0.
                 let pedidosImporte = 0;
                 if (item.pedidos && !String(item.pedidos).includes('#')) {
                     pedidosImporte = Number(item.pedidos) || 0;
@@ -179,7 +178,6 @@
                 exitoMedio: groupedAreas[areaName].sumExito / groupedAreas[areaName].count
             }));
 
-            // El orden y la selección del Área Top ahora se rigen estrictamente por la columna L (pedidos)
             const areasByPedidos = [...areasArray].sort((a, b) => b.pedidos - a.pedidos);
             const areasBySuccess = [...areasArray].sort((a, b) => b.exitoMedio - a.exitoMedio);
 
@@ -292,7 +290,7 @@
                             <div class="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden">
                                 <div class="h-full ${barColor}" style="width: ${c > 100 ? 100 : c}%"></div>
                             </div>
-                            <span class="text-xs font-black w-10 text-right">${c.toFixed(0)}%</span>
+                            <span class="text-xs font-black w-12 text-right">${c.toFixed(1)}%</span>
                         </div>
                     </td>
                 </tr>
