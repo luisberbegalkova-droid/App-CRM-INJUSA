@@ -150,13 +150,12 @@
             const groupedAreas = {};
             let totalEurosGlobal = 0;
 
-            // CAMBIO AQUÍ: Al procesar el promedio global y los gráficos por área, limitamos el cumplimiento de cada fila al 100%
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
                 const presupuesto = Number(item.presupuesto) || 0;
                 
                 let rawExito = Number(item.cumplimiento) || 0;
-                const exitoObjetivo = rawExito > 100 ? 100 : rawExito; // Si pasa de 100, se queda en 100
+                const exitoObjetivo = rawExito > 100 ? 100 : rawExito;
                 
                 let pedidosImporte = 0;
                 if (item.pedidos && !String(item.pedidos).includes('#')) {
@@ -187,7 +186,6 @@
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
-            // CAMBIO AQUÍ: El cálculo del KPI promedio también respetará el límite del 100% por cliente
             const totalExitoLimitado = data.reduce((acc, item) => {
                 let val = Number(item.cumplimiento) || 0;
                 return acc + (val > 100 ? 100 : val);
@@ -285,7 +283,6 @@
                 let p = Number(item.presupuesto) || 0;
                 let rawC = Number(item.cumplimiento) || 0;
                 
-                // CAMBIO AQUÍ: Clavamos el valor en 100 si pasa del límite para la visualización de la tabla
                 let c = rawC > 100 ? 100 : rawC; 
                 
                 let barColor = 'bg-blue-600';
@@ -309,7 +306,7 @@
                     <td class="p-4">
                         <div class="flex items-center gap-3">
                             <div class="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                                <div class="h-full ${barColor}" style="width: ${c}"></div>
+                                <div class="h-full ${barColor}" style="width: ${c}%"></div>
                             </div>
                             <span class="text-xs font-black w-12 text-right">${c.toFixed(1)}%</span>
                         </div>
