@@ -149,15 +149,14 @@
         function processDashboard(data) {
             const groupedAreas = {};
             let totalEurosGlobal = 0;
-            let totalPedidosGlobal = 0;
 
+            // 1. Acumulamos Presupuestos y Pedidos de forma limpia
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
                 const presupuesto = Number(item.presupuesto) || 0;
                 const pedidosImporte = Number(item.pedidos) || 0;
 
                 totalEurosGlobal += presupuesto;
-                totalPedidosGlobal += pedidosImporte;
 
                 if (!groupedAreas[area]) {
                     groupedAreas[area] = { sumPresupuesto: 0, sumPedidos: 0 };
@@ -166,6 +165,7 @@
                 groupedAreas[area].sumPedidos += pedidosImporte;
             });
 
+            // 2. Calculamos los promedios reales por cada Área Comercial
             const areasArray = Object.keys(groupedAreas).map(areaName => {
                 const pres = groupedAreas[areaName].sumPresupuesto;
                 const peds = groupedAreas[areaName].sumPedidos;
@@ -182,11 +182,14 @@
             const areasByPedidos = [...areasArray].sort((a, b) => b.pedidos - a.pedidos);
             const areasBySuccess = [...areasArray].sort((a, b) => b.exitoMedio - a.exitoMedio);
 
+            // Asignación de los dos primeros KPIs
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
-            const avgGlobal = totalEurosGlobal > 0 ? (totalPedidosGlobal / totalEurosGlobal) * 100 : 0;
-            document.getElementById('kpi-avg').innerText = (avgGlobal > 100 ? 100 : avgGlobal).toFixed(1) + '%';
+            // CAMBIO AQUÍ: Promedio de los promedios calculados por área comercial
+            const sumaPromediosAreas = areasArray.reduce((acc, curr) => acc + curr.exitoMedio, 0);
+            const avgGlobalDePromedios = areasArray.length > 0 ? (sumaPromediosAreas / areasArray.length) : 0;
+            document.getElementById('kpi-avg').innerText = avgGlobalDePromedios.toFixed(1) + '%';
 
             // Gráfica 1: Barras Comparativas (€)
             drawChart('chart-bar-areas', 'bar', {
@@ -197,7 +200,7 @@
                 ]
             }, true, false);
 
-            // Gráfica 2: % Éxito Objetivo Matemático Real por Área
+            // Gráfica 2: % Éxito Objetivo por Área Comercial
             drawChart('chart-bar-exito', 'bar', {
                 labels: areasBySuccess.map(a => a.name),
                 datasets: [{ 
@@ -212,7 +215,6 @@
             const top15 = [...data].sort((a, b) => b.pedidos - a.pedidos).slice(0, 15);
             const pieColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#45EDC0', '#F7464A', '#46BFBD', '#FDB45C', '#949FB1', '#4D5360', '#AC64AD', '#5175AE', '#E2EAE9'];
             
-            // CAMBIO AQUÍ: Activamos la configuración de datalabels externos SOLO para la dona
             drawChart('chart-pie-clientes', 'doughnut', {
                 labels: top15.map(c => c.cliente),
                 datasets: [{ data: top15.map(c => c.pedidos), backgroundColor: pieColors, borderWidth: 2, borderColor: '#fff' }]
@@ -228,15 +230,14 @@
                 maintainAspectRatio: false,
                 plugins: { 
                     legend: { display: showLegend, position: 'top' },
-                    datalabels: { display: false } // Por defecto desactivado en barras
+                    datalabels: { display: false } 
                 },
                 scales: type === 'bar' ? { y: { beginAtZero: true }, x: { grid: { display: false } } } : {}
             };
 
-            // Lógica de inyección exclusiva para la dona
             if (isPieWithLabels) {
                 options.cutout = '53%';
-                options.layout = { padding: 45 }; // Espacio extra para que no se corten los nombres
+                options.layout = { padding: 45 }; 
                 options.plugins.datalabels = {
                     display: true,
                     color: '#4B5563',
@@ -246,7 +247,6 @@
                     font: { size: 9, weight: '600', family: "'Inter', sans-serif" },
                     formatter: (value, ctx) => {
                         let label = ctx.chart.data.labels[ctx.dataIndex] || '';
-                        // Recorta nombres excesivamente largos para cuidar la estética premium
                         return label.length > 14 ? label.substring(0, 14) + '...' : label;
                     }
                 };
