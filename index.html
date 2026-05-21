@@ -20,7 +20,6 @@
 </head>
 <body class="bg-[#f3f4f6] h-screen flex overflow-hidden text-gray-900">
 
-    <!-- SIDEBAR -->
     <aside class="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm z-20 shrink-0">
         <div class="p-6 flex items-center gap-3">
             <div class="w-10 h-10 bg-black text-white rounded-lg flex items-center justify-center font-black text-xl">I</div>
@@ -36,7 +35,6 @@
         </nav>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col h-screen overflow-y-auto relative">
         <header class="bg-white p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 z-10 shrink-0">
             <h2 id="page-title" class="text-2xl font-black tracking-tight">Dashboard Visual</h2>
@@ -47,45 +45,44 @@
 
         <div class="p-6 flex-1 flex flex-col gap-6">
             
-            <!-- VIEW: DASHBOARD VISUAL -->
             <div id="view-dashboard" class="flex flex-col gap-6">
-                <!-- KPIs -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
                     <div class="bg-white p-6 rounded-2xl border shadow-sm">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Presupuesto Global</p>
                         <h3 id="kpi-total" class="text-3xl font-black">0 €</h3>
                     </div>
                     <div class="bg-white p-6 rounded-2xl border shadow-sm border-l-4 border-l-blue-600">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Área Top (Importe)</p>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Área Top (Pedidos)</p>
                         <h3 id="kpi-top-area" class="text-2xl font-black text-blue-600">-</h3>
                     </div>
+                    <div class="bg-white p-6 rounded-2xl border shadow-sm border-l-4 border-l-green-600">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Área Top (% Éxito)</p>
+                        <h3 id="kpi-top-exito" class="text-2xl font-black text-green-600">-</h3>
+                    </div>
                     <div class="bg-white p-6 rounded-2xl border shadow-sm">
-                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Éxito Objetivo Promedio</p>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Éxito Objetivo Promedio Global</p>
                         <h3 id="kpi-avg" class="text-3xl font-black">0%</h3>
                     </div>
                 </div>
 
-                <!-- Gráficas Superiores -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-white p-6 rounded-2xl border shadow-sm flex flex-col">
-                        <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">Ranking Áreas por Importe (€)</h4>
+                        <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">Ranking Áreas por Importe (€) y Pedidos</h4>
                         <div class="chart-box-md"><canvas id="chart-bar-areas"></canvas></div>
                     </div>
                     
                     <div class="bg-white p-6 rounded-2xl border shadow-sm flex flex-col">
-                        <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">Reparto Top 15 Clientes</h4>
+                        <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">Reparto Pedidos Top 15 Clientes</h4>
                         <div class="chart-box-md"><canvas id="chart-pie-clientes"></canvas></div>
                     </div>
                 </div>
 
-                <!-- Gráfica Inferior -->
                 <div class="bg-white p-6 rounded-2xl border shadow-sm flex flex-col">
-                    <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">% Éxito Objetivo por Área Comercial (Cumplimiento)</h4>
+                    <h4 class="text-sm font-bold text-gray-800 uppercase mb-4">% Éxito Objetivo por Área Comercial (Cumplimiento Real)</h4>
                     <div class="chart-box-md"><canvas id="chart-bar-exito"></canvas></div>
                 </div>
             </div>
 
-            <!-- VIEW: RESUMEN CLIENTES -->
             <div id="view-clientes" class="hidden bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex-col h-full flex-1">
                 <div class="overflow-auto flex-1">
                     <table class="w-full text-left border-collapse">
@@ -94,13 +91,13 @@
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Cliente</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap">Área Comercial</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 text-right whitespace-nowrap">Presupuesto</th>
+                                <th class="p-4 text-xs font-bold uppercase text-gray-500 text-right whitespace-nowrap">Pedidos</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 whitespace-nowrap text-center">Estado</th>
                                 <th class="p-4 text-xs font-bold uppercase text-gray-500 w-64 whitespace-nowrap">Éxito Objetivo (% Completado)</th>
                             </tr>
                         </thead>
                         <tbody id="table-body" class="divide-y divide-gray-100">
-                            <!-- JS inyecta filas aquí -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
@@ -108,7 +105,6 @@
         </div>
     </main>
 
-    <!-- Pantalla de carga -->
     <div id="loader" class="fixed inset-0 bg-white/90 flex flex-col items-center justify-center z-50 hidden backdrop-blur-sm">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-black mb-4"></div>
         <p class="font-bold tracking-widest text-sm uppercase text-gray-500">Sincronizando Base de Datos...</p>
@@ -134,10 +130,9 @@
         const formatEur = (num) => new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(num);
 
         function getSuccessColor(value) {
-            // El color avanza de rojo a verde según el porcentaje de éxito objetivo (completado)
-            const clampedValue = Math.min(Math.max(value, 0), 100);
-            const hue = ((clampedValue / 100) * 120).toString(10);
-            return `hsl(${hue}, 70%, 45%)`;
+            if (value < 30) return '#ef4444';
+            if (value < 70) return '#eab308';
+            return '#22c55e';
         }
 
         async function fetchCRMData() {
@@ -163,55 +158,77 @@
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
                 const presupuesto = Number(item.presupuesto) || 0;
-                // 'item.cumplimiento' mapea ahora directamente al % de éxito objetivo de tu hoja
-                const exitoObjetivo = Number(item.cumplimiento) || 0;
+                const pedidosImporte = Number(item.pedidos) || 0;
 
                 totalEurosGlobal += presupuesto;
 
                 if (!groupedAreas[area]) {
-                    groupedAreas[area] = { sumPresupuesto: 0, sumExito: 0, count: 0 };
+                    groupedAreas[area] = { sumPresupuesto: 0, sumPedidos: 0 };
                 }
                 groupedAreas[area].sumPresupuesto += presupuesto;
-                groupedAreas[area].sumExito += exitoObjetivo;
-                groupedAreas[area].count += 1;
+                groupedAreas[area].sumPedidos += pedidosImporte;
             });
 
-            const areasArray = Object.keys(groupedAreas).map(areaName => ({
-                name: areaName,
-                presupuesto: groupedAreas[areaName].sumPresupuesto,
-                exitoMedio: groupedAreas[areaName].sumExito / groupedAreas[areaName].count
-            }));
+            const areasArray = Object.keys(groupedAreas).map(areaName => {
+                const pres = groupedAreas[areaName].sumPresupuesto;
+                const peds = groupedAreas[areaName].sumPedidos;
+                const exitoReal = pres > 0 ? (peds / pres) * 100 : 0;
 
-            const areasByPres = [...areasArray].sort((a, b) => b.presupuesto - a.presupuesto);
+                return {
+                    name: areaName,
+                    presupuesto: pres,
+                    pedidos: peds,
+                    exitoMedio: exitoReal > 100 ? 100 : exitoReal
+                };
+            });
+
+            const areasByPedidos = [...areasArray].sort((a, b) => b.pedidos - a.pedidos);
             const areasBySuccess = [...areasArray].sort((a, b) => b.exitoMedio - a.exitoMedio);
 
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
-            document.getElementById('kpi-top-area').innerText = areasByPres.length > 0 ? areasByPres[0].name : '-';
+            document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
-            // Cálculo del promedio global basado en el Éxito Objetivo (% de completado)
-            const avgGlobal = data.reduce((a, b) => a + (b.cumplimiento || 0), 0) / (data.length || 1);
-            document.getElementById('kpi-avg').innerText = avgGlobal.toFixed(1) + '%';
+            if (areasBySuccess.length > 0) {
+                document.getElementById('kpi-top-exito').innerText = areasBySuccess[0].name + ' (' + areasBySuccess[0].exitoMedio.toFixed(1) + '%)';
+            } else {
+                document.getElementById('kpi-top-exito').innerText = '-';
+            }
+            
+            const sumaPromediosAreas = areasArray.reduce((acc, curr) => acc + curr.exitoMedio, 0);
+            const avgGlobalDePromedios = areasArray.length > 0 ? (sumaPromediosAreas / areasArray.length) : 0;
+            document.getElementById('kpi-avg').innerText = avgGlobalDePromedios.toFixed(1) + '%';
 
+            // Gráfica 1: Barras Comparativas (€)
             drawChart('chart-bar-areas', 'bar', {
-                labels: areasByPres.map(a => a.name),
-                datasets: [{ label: 'Importe Total (€)', data: areasByPres.map(a => a.presupuesto), backgroundColor: '#000000', borderRadius: 6 }]
-            }, false);
+                labels: areasByPedidos.map(a => a.name),
+                datasets: [
+                    { label: 'Presupuesto (€)', data: areasByPedidos.map(a => a.presupuesto), backgroundColor: '#000000', borderRadius: 4 },
+                    { label: 'Pedidos Cumplidos (€)', data: areasByPedidos.map(a => a.pedidos), backgroundColor: '#f97316', borderRadius: 4 }
+                ]
+            }, true, false);
 
+            // Gráfica 2: % Éxito Objetivo por Área Comercial
             drawChart('chart-bar-exito', 'bar', {
                 labels: areasBySuccess.map(a => a.name),
-                datasets: [{ label: '% Éxito Objetivo', data: areasBySuccess.map(a => a.exitoMedio), backgroundColor: areasBySuccess.map(a => getSuccessColor(a.exitoMedio)), borderRadius: 6 }]
-            }, false);
+                datasets: [{ 
+                    label: '% Éxito Objetivo', 
+                    data: areasBySuccess.map(a => a.exitoMedio), 
+                    backgroundColor: areasBySuccess.map(a => getSuccessColor(a.exitoMedio)), 
+                    borderRadius: 6 
+                }]
+            }, false, false);
             
-            const top15 = [...data].sort((a, b) => (Number(b.presupuesto) || 0) - (Number(a.presupuesto) || 0)).slice(0, 15);
+            // Rosco del Top 15 Clientes
+            const top15 = [...data].sort((a, b) => b.pedidos - a.pedidos).slice(0, 15);
             const pieColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#45EDC0', '#F7464A', '#46BFBD', '#FDB45C', '#949FB1', '#4D5360', '#AC64AD', '#5175AE', '#E2EAE9'];
             
             drawChart('chart-pie-clientes', 'doughnut', {
                 labels: top15.map(c => c.cliente),
-                datasets: [{ data: top15.map(c => c.presupuesto), backgroundColor: pieColors, borderWidth: 2, borderColor: '#fff' }]
-            }, true);
+                datasets: [{ data: top15.map(c => c.pedidos), backgroundColor: pieColors, borderWidth: 2, borderColor: '#fff' }]
+            }, false, true);
         }
 
-        function drawChart(id, type, data, isPie) {
+        function drawChart(id, type, data, showLegend = false, isPieWithLabels = false) {
             if (chartInstances[id]) chartInstances[id].destroy();
             const ctx = document.getElementById(id).getContext('2d');
             
@@ -219,27 +236,27 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: { 
-                    legend: { display: false },
-                    datalabels: { display: false }
+                    legend: { display: showLegend, position: 'top' },
+                    datalabels: { display: false } 
                 },
                 scales: type === 'bar' ? { y: { beginAtZero: true }, x: { grid: { display: false } } } : {}
             };
 
-            if(isPie) {
-                options.cutout = '55%';
+            if (isPieWithLabels) {
+                options.cutout = '53%';
+                options.layout = { padding: 45 }; 
                 options.plugins.datalabels = {
                     display: true,
                     color: '#4B5563',
                     anchor: 'end',
                     align: 'end',
-                    offset: 5,
-                    font: { size: 9, weight: 'bold' },
+                    offset: 8,
+                    font: { size: 9, weight: '600', family: "'Inter', sans-serif" },
                     formatter: (value, ctx) => {
-                        let label = ctx.chart.data.labels[ctx.dataIndex];
-                        return label.length > 15 ? label.substring(0,15) + '...' : label;
+                        let label = ctx.chart.data.labels[ctx.dataIndex] || '';
+                        return label.length > 14 ? label.substring(0, 14) + '...' : label;
                     }
                 };
-                options.layout = { padding: 40 };
             }
 
             chartInstances[id] = new Chart(ctx, { type: type, data: data, options: options });
@@ -247,16 +264,13 @@
 
         function renderTable(data) {
             const tbody = document.getElementById('table-body');
-            
-            const sortedData = [...data].sort((a, b) => {
-                const presA = Number(a.presupuesto) || 0;
-                const presB = Number(b.presupuesto) || 0;
-                return presB - presA;
-            });
+            const sortedData = [...data].sort((a, b) => b.presupuesto - a.presupuesto);
 
             tbody.innerHTML = sortedData.map(item => {
                 let p = Number(item.presupuesto) || 0;
-                let c = Number(item.cumplimiento) || 0;
+                let ped = Number(item.pedidos) || 0; // Capturamos el dato de pedidos
+                let rawC = Number(item.cumplimiento) || 0;
+                let c = rawC > 100 ? 100 : rawC; 
                 
                 let barColor = 'bg-blue-600';
                 if (c < 50) barColor = 'bg-red-500';
@@ -265,7 +279,7 @@
 
                 const estado = String(item.estado || 'Pendiente');
                 let badgeClass = 'bg-gray-100 text-gray-700';
-                if(estado.toLowerCase().includes('positivo') || estado.toLowerCase().includes('ganado') || estado.toLowerCase().includes('superado')) badgeClass = 'bg-green-100 text-green-800';
+                if(estado.toLowerCase().includes('positivo') || estado.toLowerCase().includes('ganado')) badgeClass = 'bg-green-100 text-green-800';
                 if(estado.toLowerCase().includes('negativo') || estado.toLowerCase().includes('perdido')) badgeClass = 'bg-red-100 text-red-800';
 
                 return `
@@ -273,15 +287,16 @@
                     <td class="p-4 text-sm font-bold text-gray-900">${item.cliente}</td>
                     <td class="p-4 text-sm text-gray-500">${item.area || '-'}</td>
                     <td class="p-4 text-sm font-semibold text-right">${formatEur(p)}</td>
+                    <td class="p-4 text-sm font-semibold text-right text-orange-600">${formatEur(ped)}</td>
                     <td class="p-4 text-center">
                         <span class="px-3 py-1 rounded-full text-xs font-bold ${badgeClass}">${estado}</span>
                     </td>
                     <td class="p-4">
                         <div class="flex items-center gap-3">
                             <div class="flex-1 h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                                <div class="h-full ${barColor}" style="width: ${c > 100 ? 100 : c}%"></div>
+                                <div class="h-full ${barColor}" style="width: ${c}%"></div>
                             </div>
-                            <span class="text-xs font-black w-10 text-right">${c.toFixed(0)}%</span>
+                            <span class="text-xs font-black w-12 text-right">${c.toFixed(1)}%</span>
                         </div>
                     </td>
                 </tr>
