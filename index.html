@@ -46,7 +46,7 @@
         <div class="p-6 flex-1 flex flex-col gap-6">
             
             <div id="view-dashboard" class="flex flex-col gap-6">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 shrink-0">
                     <div class="bg-white p-6 rounded-2xl border shadow-sm">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Presupuesto Global</p>
                         <h3 id="kpi-total" class="text-3xl font-black">0 €</h3>
@@ -54,6 +54,10 @@
                     <div class="bg-white p-6 rounded-2xl border shadow-sm border-l-4 border-l-blue-600">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Área Top (Pedidos)</p>
                         <h3 id="kpi-top-area" class="text-2xl font-black text-blue-600">-</h3>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border shadow-sm border-l-4 border-l-green-600">
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Área Top (% Éxito)</p>
+                        <h3 id="kpi-top-exito" class="text-2xl font-black text-green-600">-</h3>
                     </div>
                     <div class="bg-white p-6 rounded-2xl border shadow-sm">
                         <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Éxito Objetivo Promedio Global</p>
@@ -150,7 +154,6 @@
             const groupedAreas = {};
             let totalEurosGlobal = 0;
 
-            // 1. Acumulamos Presupuestos y Pedidos de forma limpia
             data.forEach(item => {
                 const area = item.area || 'Sin Área';
                 const presupuesto = Number(item.presupuesto) || 0;
@@ -165,7 +168,6 @@
                 groupedAreas[area].sumPedidos += pedidosImporte;
             });
 
-            // 2. Calculamos los promedios reales por cada Área Comercial
             const areasArray = Object.keys(groupedAreas).map(areaName => {
                 const pres = groupedAreas[areaName].sumPresupuesto;
                 const peds = groupedAreas[areaName].sumPedidos;
@@ -182,11 +184,17 @@
             const areasByPedidos = [...areasArray].sort((a, b) => b.pedidos - a.pedidos);
             const areasBySuccess = [...areasArray].sort((a, b) => b.exitoMedio - a.exitoMedio);
 
-            // Asignación de los dos primeros KPIs
+            // Asignación de los KPIs
             document.getElementById('kpi-total').innerText = formatEur(totalEurosGlobal);
             document.getElementById('kpi-top-area').innerText = areasByPedidos.length > 0 ? areasByPedidos[0].name : '-';
             
-            // CAMBIO AQUÍ: Promedio de los promedios calculados por área comercial
+            // LOGICA BURBUJA NUEVA: Selecciona el nombre del área comercial con mejor porcentaje de éxito real
+            if (areasBySuccess.length > 0) {
+                document.getElementById('kpi-top-exito').innerText = areasBySuccess[0].name + ' (' + areasBySuccess[0].exitoMedio.toFixed(1) + '%)';
+            } else {
+                document.getElementById('kpi-top-exito').innerText = '-';
+            }
+            
             const sumaPromediosAreas = areasArray.reduce((acc, curr) => acc + curr.exitoMedio, 0);
             const avgGlobalDePromedios = areasArray.length > 0 ? (sumaPromediosAreas / areasArray.length) : 0;
             document.getElementById('kpi-avg').innerText = avgGlobalDePromedios.toFixed(1) + '%';
